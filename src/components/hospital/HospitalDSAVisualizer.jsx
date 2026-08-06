@@ -37,17 +37,17 @@ export default function HospitalDSAVisualizer({ engine }) {
   return (
     <div className="space-y-8">
       {/* Section Header */}
-      <div className="flex items-center justify-between bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-xl">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-xl">
         <div>
-          <h2 className="text-xl font-extrabold text-white flex items-center gap-2">
-            <Activity className="w-5 h-5 text-cyan-400" />
+          <h2 className="text-lg sm:text-xl font-extrabold text-white flex items-center gap-2">
+            <Activity className="w-5 h-5 text-cyan-400 shrink-0" />
             Live Data Structures Memory State Inspector
           </h2>
           <p className="text-xs text-slate-400 mt-1">
             Real-time visual state representation of all 5 fundamental STL data structures powering the hospital engine.
           </p>
         </div>
-        <div className="px-3 py-1.5 rounded-full text-xs font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+        <div className="px-3 py-1.5 rounded-full text-xs font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0">
           Trace Step #{engine.stepCount}
         </div>
       </div>
@@ -56,23 +56,23 @@ export default function HospitalDSAVisualizer({ engine }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         {/* DS 1: UNORDERED MAP (Hash Table & Buckets) */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800 gap-2">
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0">
                 <Database className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">1. unordered_map&lt;string, Patient&gt;</h3>
+                <h3 className="text-xs sm:text-sm font-bold text-white">1. unordered_map&lt;string, Patient&gt;</h3>
                 <p className="text-[10px] text-slate-400">Master Patient Registry (Hash Buckets O(1))</p>
               </div>
             </div>
-            <span className="text-xs font-mono text-cyan-400 font-bold bg-slate-950 px-2 py-1 rounded-lg border border-slate-800">
+            <span className="text-xs font-mono text-cyan-400 font-bold bg-slate-950 px-2 py-1 rounded-lg border border-slate-800 shrink-0">
               {registryArray.length} Records
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
             {hashBuckets.map((bucket, idx) => (
               <div key={idx} className="p-2.5 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-1.5">
                 <div className="text-[10px] font-mono text-cyan-400 font-bold flex items-center justify-between">

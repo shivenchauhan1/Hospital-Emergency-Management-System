@@ -22,7 +22,7 @@ export default function HospitalPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-16">
       {/* Hero Header */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-950 to-rose-950 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-4 relative overflow-hidden">
+      <div className="bg-gradient-to-r from-slate-900 via-slate-950 to-rose-950 border border-slate-800 rounded-3xl p-5 sm:p-8 shadow-2xl space-y-4 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
@@ -30,17 +30,17 @@ export default function HospitalPage() {
           Real-World Healthcare DSA System (C++ STL Powered)
         </div>
 
-        <h1 className="text-3xl lg:text-5xl font-extrabold text-white flex items-center gap-3">
-          <HeartPulse className="w-10 h-10 text-rose-500 animate-pulse" />
-          Hospital Emergency Management System
+        <h1 className="text-2xl sm:text-3xl lg:text-5xl font-extrabold text-white flex items-center gap-2.5 sm:gap-3 leading-tight">
+          <HeartPulse className="w-8 h-8 sm:w-10 sm:h-10 text-rose-500 animate-pulse shrink-0" />
+          <span>Hospital Emergency Management System</span>
         </h1>
 
-        <p className="text-slate-300 text-xs lg:text-sm max-w-3xl leading-relaxed">
+        <p className="text-slate-300 text-xs sm:text-sm max-w-3xl leading-relaxed">
           Demonstrates integration of 6 fundamental C++ STL Data Structures: <strong className="text-cyan-400">unordered_map</strong> (Patient Records), <strong className="text-rose-400">priority_queue Max-Heap</strong> (Emergency Triage), <strong className="text-teal-400">queue</strong> (Outpatient FIFO), <strong className="text-purple-400">list</strong> (Treatment History), <strong className="text-amber-400">stack</strong> (LIFO Undo), and <strong className="text-indigo-400">QuickSort / MergeSort</strong> (Patient Reports).
         </p>
 
         {/* Sub-Tab Navigation */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800/80">
+        <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80 overflow-x-auto scrollbar-none pb-1 sm:pb-0 sm:flex-wrap">
           <button
             onClick={() => setActiveTab('simulator')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${

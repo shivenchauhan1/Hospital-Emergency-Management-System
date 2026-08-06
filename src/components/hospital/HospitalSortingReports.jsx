@@ -44,15 +44,15 @@ export default function HospitalSortingReports({ engine }) {
   };
 
   return (
-    <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 lg:p-8 shadow-2xl space-y-6">
+    <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl space-y-6">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+          <div className="p-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 shrink-0">
             <BarChart2 className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
               Patient Clinical Reports & Sorting Engine
             </h2>
             <p className="text-xs text-slate-400">
@@ -62,13 +62,13 @@ export default function HospitalSortingReports({ engine }) {
         </div>
 
         {/* Controls */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div>
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+          <div className="flex-1 sm:flex-initial">
             <label className="text-[10px] text-slate-400 block mb-0.5">Algorithm</label>
             <select
               value={algorithm}
               onChange={(e) => setAlgorithm(e.target.value)}
-              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-indigo-400 font-bold focus:outline-none focus:border-indigo-500"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-indigo-400 font-bold focus:outline-none focus:border-indigo-500"
             >
               <option value="quickSort">QuickSort O(N log N)</option>
               <option value="mergeSort">MergeSort O(N log N)</option>
@@ -76,12 +76,12 @@ export default function HospitalSortingReports({ engine }) {
             </select>
           </div>
 
-          <div>
+          <div className="flex-1 sm:flex-initial">
             <label className="text-[10px] text-slate-400 block mb-0.5">Sort Criteria</label>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
             >
               <option value="severity">Triage Severity Rating</option>
               <option value="age">Patient Age</option>
@@ -104,13 +104,13 @@ export default function HospitalSortingReports({ engine }) {
       </div>
 
       {/* Visual Severity Bar Chart Preview */}
-      <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+      <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 overflow-hidden">
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
           <span>Visual Spectrum Bar (Sorted by {sortBy.toUpperCase()})</span>
           <span className="font-mono text-[10px] text-indigo-400">{sortedList.length} Records Rendered</span>
         </h3>
 
-        <div className="flex items-end gap-2 h-32 pt-4 px-2 border-b border-slate-800">
+        <div className="flex items-end gap-2 h-32 pt-4 px-2 border-b border-slate-800 overflow-x-auto scrollbar-none">
           {sortedList.map((p) => {
             const heightPercent = sortBy === 'severity'
               ? (p.triageLevel / 10) * 100
@@ -119,7 +119,7 @@ export default function HospitalSortingReports({ engine }) {
               : 50;
 
             return (
-              <div key={p.id} className="flex-1 flex flex-col items-center gap-1 group relative">
+              <div key={p.id} className="flex-1 min-w-[28px] sm:min-w-0 flex flex-col items-center gap-1 group relative">
                 {/* Tooltip */}
                 <div className="absolute -top-10 hidden group-hover:block bg-slate-900 text-white text-[10px] font-mono p-1.5 rounded-lg border border-slate-700 shadow-xl z-20 whitespace-nowrap">
                   {p.name} ({p.id}) • L{p.triageLevel} Severity • Age {p.age}
@@ -143,8 +143,8 @@ export default function HospitalSortingReports({ engine }) {
       </div>
 
       {/* Sorted Data Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs border-collapse font-mono">
+      <div className="overflow-x-auto scrollbar-thin">
+        <table className="w-full min-w-[640px] text-left text-xs border-collapse font-mono">
           <thead>
             <tr className="border-b border-slate-800 bg-slate-950 text-slate-400">
               <th className="p-3">Rank</th>
