@@ -35,6 +35,8 @@ const departmentRoutes = require('./routes/departmentRoutes');
 const ambulanceRoutes = require('./routes/ambulanceRoutes');
 const bedRoutes = require('./routes/bedRoutes');
 const bloodRoutes = require('./routes/bloodRoutes');
+const patientRoutes = require('./routes/patientRoutes');
+const staffRoutes = require('./routes/staffRoutes');
 
 app.use('/api', authRoutes);
 app.use('/api/emergency', createEmergencyRoutes(io));
@@ -43,6 +45,8 @@ app.use('/api/departments', departmentRoutes);
 app.use('/api/ambulances', ambulanceRoutes);
 app.use('/api/beds', bedRoutes);
 app.use('/api/blood', bloodRoutes);
+app.use('/api/patients', patientRoutes);
+app.use('/api/staff', staffRoutes);
 
 // Helper Root Status Endpoint
 app.get('/', (req, res) => {
@@ -58,14 +62,12 @@ app.get('/', (req, res) => {
       "GET /api/beds",
       "GET /api/blood",
       "GET /api/emergency",
+      "GET /api/patients",
+      "GET /api/staff",
       "POST /api/emergency",
       "PUT /api/emergency/approve",
-      "PUT /api/emergency/reject",
       "PUT /api/emergency/assignDoctor",
-      "PUT /api/emergency/dispatchAmbulance",
-      "PUT /api/emergency/allocateBed",
-      "PUT /api/emergency/requestBlood",
-      "PUT /api/emergency/complete"
+      "PUT /api/emergency/dispatchAmbulance"
     ]
   });
 });

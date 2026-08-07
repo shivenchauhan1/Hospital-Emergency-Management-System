@@ -4,9 +4,35 @@ const Ambulance = require('../models/Ambulance');
 const Bed = require('../models/Bed');
 const BloodInventory = require('../models/BloodInventory');
 const EmergencyCase = require('../models/EmergencyCase');
+const Patient = require('../models/Patient');
+const Staff = require('../models/Staff');
 
 const seedHospitalData = async () => {
   try {
+    // Seed Patients
+    const patientCount = await Patient.countDocuments();
+    if (patientCount === 0) {
+      await Patient.insertMany([
+        { id: 'SAN-2026-1001', name: 'Rahul Sharma', age: 42, gender: 'Male', phone: '+91 98765 43210', address: 'Sector 32, Chandigarh', bloodGroup: 'O+', status: 'Admitted', ward: 'ICU Tower', bedNumber: 'Bed-ICU-01', attendingDoctor: 'Dr. Rajesh Sharma', medicalHistory: 'Hypertension, Cardiac Observation' },
+        { id: 'SAN-2026-1002', name: 'Pooja Verma', age: 34, gender: 'Female', phone: '+91 98765 54321', address: 'Sector 17, Chandigarh', bloodGroup: 'A+', status: 'Admitted', ward: 'General Ward', bedNumber: 'Bed-GEN-04', attendingDoctor: 'Dr. Priya Mehta', medicalHistory: 'Post-op observation' },
+        { id: 'SAN-2026-1003', name: 'Gurpreet Singh', age: 58, gender: 'Male', phone: '+91 98765 67890', address: 'Mohali Phase 7, Punjab', bloodGroup: 'B+', status: 'Outpatient', ward: 'OPD Care', bedNumber: 'N/A', attendingDoctor: 'Dr. Vivek Singh', medicalHistory: 'Routine Triage Checkup' }
+      ]);
+      console.log('✅ Seeded 3 Patient Records');
+    }
+
+    // Seed Staff
+    const staffCount = await Staff.countDocuments();
+    if (staffCount === 0) {
+      await Staff.insertMany([
+        { id: 'STF-101', name: 'Dr. Rajesh Sharma', role: 'Doctor', department: 'Cardiology', phone: '+91 172 456 7801', email: 'dr.sharma@sanjeevanihospital.in', status: 'Active' },
+        { id: 'STF-102', name: 'Vikramjit Singh', role: 'Admin', department: 'Executive Management', phone: '+91 172 456 7800', email: 'admin@sanjeevanihospital.in', status: 'Active' },
+        { id: 'STF-103', name: 'Sunita Devi', role: 'Receptionist', department: 'Patient Intake', phone: '+91 172 456 7890', email: 'reception@sanjeevanihospital.in', status: 'Active' },
+        { id: 'STF-104', name: 'Harpreet Kaur', role: 'Emergency Coordinator', department: 'Trauma & Resuscitation', phone: '+91 172 456 7810', email: 'emergency@sanjeevanihospital.in', status: 'Active' },
+        { id: 'STF-105', name: 'Dr. Rekha Gupta', role: 'Blood Bank Officer', department: 'Transfusion Medicine', phone: '+91 172 456 7820', email: 'bloodbank@sanjeevanihospital.in', status: 'Active' }
+      ]);
+      console.log('✅ Seeded 5 Staff Roster Members');
+    }
+
     // Seed Doctors
     const doctorCount = await Doctor.countDocuments();
     if (doctorCount === 0) {
