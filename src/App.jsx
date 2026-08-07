@@ -61,7 +61,7 @@ export default function App() {
   // Ambulance Handlers
   const handleUpdateAmbulanceStatus = (id, status, location) => {
     setAmbulances((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status, location: location || a.location, ETA: status === 'On Duty' ? '12 mins' : 'Immediate' } : a))
+      prev.map((a) => (a.id === id ? { ...a, status, location: location || a.location, ETA: status === 'On Route' ? '8 mins' : 'Immediate' } : a))
     );
   };
 
@@ -80,7 +80,7 @@ export default function App() {
           ? {
               ...item,
               units: Math.max(0, item.units - unitsNeeded),
-              status: item.units - unitsNeeded < item.minRequired ? 'Low Stock' : 'Adequate'
+              status: item.units - unitsNeeded < item.minRequired ? 'Low Stock' : 'Adequate Stock'
             }
           : item
       )
@@ -88,12 +88,12 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col font-sans selection:bg-[#0F766E] selection:text-white">
+    <div className="w-full min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col font-sans selection:bg-[#00695C] selection:text-white overflow-x-hidden m-0 p-0">
       {/* Navigation Header */}
       <Navbar activePage={activePage} setActivePage={setActivePage} />
 
       {/* Main Page Body */}
-      <main className="flex-1 px-3 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto w-full">
+      <main className="flex-1 w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {activePage === 'home' && <HomePage setActivePage={setActivePage} />}
 
         {activePage === 'dashboard' && (

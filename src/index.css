@@ -1,26 +1,38 @@
 @import "tailwindcss";
 
 @layer base {
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background-color: #F8FAFC;
+    color: #0F172A;
+  }
+
   body {
-    @apply bg-slate-950 text-slate-100 antialiased font-sans min-h-screen selection:bg-cyan-500 selection:text-slate-950;
+    @apply bg-[#F8FAFC] text-slate-900 antialiased font-sans selection:bg-[#00695C] selection:text-white;
   }
 }
 
-/* Custom Scrollbar */
+/* Custom Healthcare Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #020617;
+  background: #F1F5F9;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #CBD5E1;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #00695C;
 }

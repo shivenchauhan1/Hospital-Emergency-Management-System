@@ -1,128 +1,133 @@
-// Comprehensive Hospital Emergency Management System Database & Store
+// Sanjeevani Multispeciality Hospital Database Store (Chandigarh, India)
+
+export const HOSPITAL_INFO = {
+  name: "Sanjeevani Multispeciality Hospital",
+  tagline: "Caring for Life, Every Second Counts",
+  address: "Sector 32, Chandigarh – 160030, Punjab, India",
+  emergencyHelpline: "+91 112",
+  ambulanceNumber: "108",
+  receptionNumber: "+91 172 456 7890",
+  email: "info@sanjeevanihospital.in",
+  website: "www.sanjeevanihospital.in",
+  workingHours: "24×7 Emergency Services",
+  accreditation: "NABH & NABL Accredited Multispeciality Hospital"
+};
 
 export const INITIAL_PATIENTS = [
-  { id: "P-1001", name: "Eleanor Vance", age: 45, gender: "Female", bloodGroup: "O+", condition: "Acute Chest Pain / STEMI", doctor: "Dr. Gregory House", ward: "ICU Unit 4", status: "Critical", phone: "+1 (555) 234-5678", address: "742 Evergreen Terrace, Springfield", emergencyContact: "Thomas Vance (Spouse) - 555-9012", history: "Hypertension, Hyperlipidemia" },
-  { id: "P-1002", name: "Marcus Holloway", age: 28, gender: "Male", bloodGroup: "A-", condition: "Compound Radius Fracture", doctor: "Dr. Robert Chase", ward: "Ortho Ward 2", status: "Admitted", phone: "+1 (555) 345-6789", address: "123 Market St, San Francisco", emergencyContact: "Sitara Dhawan (Friend) - 555-8901", history: "No prior surgeries" },
-  { id: "P-1003", name: "Dr. Sarah Jenkins", age: 62, gender: "Female", bloodGroup: "B+", condition: "Hypertensive Crisis", doctor: "Dr. Allison Cameron", ward: "Cardiology B", status: "Stable", phone: "+1 (555) 456-7890", address: "456 Elm Ave, Boston", emergencyContact: "Arthur Jenkins (Son) - 555-7890", history: "Type 2 Diabetes" },
-  { id: "P-1004", name: "Devon Miller", age: 34, gender: "Male", bloodGroup: "AB+", condition: "Acute Respiratory Wheezing", doctor: "Dr. James Wilson", ward: "Pulmonary 1", status: "Admitted", phone: "+1 (555) 567-8901", address: "890 Pine Rd, Seattle", emergencyContact: "Rachel Miller (Wife) - 555-6789", history: "Asthma since childhood" },
-  { id: "P-1005", name: "Sophia Chen", age: 19, gender: "Female", bloodGroup: "O-", condition: "Severe Anaphylaxis", doctor: "Dr. Lisa Cuddy", ward: "Emergency Bay 3", status: "Under Observation", phone: "+1 (555) 678-9012", address: "321 Oak St, Chicago", emergencyContact: "Grace Chen (Mother) - 555-5678", history: "Peanut Allergy" },
-  { id: "P-1006", name: "David Kim", age: 52, gender: "Male", bloodGroup: "A+", condition: "Acute Appendicitis", doctor: "Dr. Eric Foreman", ward: "Surgical Ward 1", status: "Pre-Op", phone: "+1 (555) 789-0123", address: "555 Maple Dr, Austin", emergencyContact: "Jenny Kim (Wife) - 555-4567", history: "None" },
-  { id: "P-1007", name: "Amanda Martinez", age: 31, gender: "Female", bloodGroup: "B-", condition: "Severe Migraine & Dehydration", doctor: "Dr. Remy Hadley", ward: "General Ward A", status: "Stable", phone: "+1 (555) 890-1234", address: "777 Cedar Ln, Miami", emergencyContact: "Carlos Martinez (Brother) - 555-3456", history: "Chronic Migraine" },
-  { id: "P-1008", name: "James Wilson Jr.", age: 8, gender: "Male", bloodGroup: "O+", condition: "High Fever & Convulsions", doctor: "Dr. Jessica Adams", ward: "Pediatric ICU", status: "Critical", phone: "+1 (555) 901-2345", address: "124 Conch St, Bikini", emergencyContact: "James Wilson Sr. (Father) - 555-2345", history: "Febrile seizures" },
-  { id: "P-1009", name: "Rachel Green", age: 29, gender: "Female", bloodGroup: "AB-", condition: "Third-Trimester Abdominal Pain", doctor: "Dr. Lisa Cuddy", ward: "Maternity Bay", status: "Under Observation", phone: "+1 (555) 012-3456", address: "90 Bedford St, New York", emergencyContact: "Ross Geller (Partner) - 555-1234", history: "First Pregnancy" },
-  { id: "P-1010", name: "Christopher Nolan", age: 53, gender: "Male", bloodGroup: "A+", condition: "Traumatic Brain Injury (TBI)", doctor: "Dr. Gregory House", ward: "ICU Bed 1", status: "Critical", phone: "+1 (555) 123-9876", address: "888 Cinema Way, Los Angeles", emergencyContact: "Emma Thomas (Spouse) - 555-0987", history: "Concussion 2018" },
-  { id: "P-1011", name: "Hanna Marin", age: 22, gender: "Female", bloodGroup: "O+", condition: "Laceration & Soft Tissue Damage", doctor: "Dr. Robert Chase", ward: "Trauma Room B", status: "Stable", phone: "+1 (555) 234-8765", address: "432 Rosewood Ln, PA", emergencyContact: "Ashley Marin (Mother) - 555-9876", history: "None" },
-  { id: "P-1012", name: "George Clark", age: 71, gender: "Male", bloodGroup: "B+", condition: "Congestive Heart Failure", doctor: "Dr. Allison Cameron", ward: "CCU Bed 3", status: "Critical", phone: "+1 (555) 345-7654", address: "500 Grand Ave, Chicago", emergencyContact: "Martha Clark (Wife) - 555-8765", history: "CABG Surgery 2015" },
-  { id: "P-1013", name: "Olivia Wilde", age: 38, gender: "Female", bloodGroup: "A-", condition: "Acute Renal Colic", doctor: "Dr. James Wilson", ward: "Urology Ward 2", status: "Admitted", phone: "+1 (555) 456-6543", address: "12 Star Ave, Hollywood", emergencyContact: "Jason S. (Husband) - 555-7654", history: "Kidney Stones" },
-  { id: "P-1014", name: "Ethan Hunt", age: 41, gender: "Male", bloodGroup: "O-", condition: "Multiple Rib Fractures", doctor: "Dr. Eric Foreman", ward: "Trauma Ward 1", status: "Admitted", phone: "+1 (555) 567-5432", address: "007 Agent Way, Langley", emergencyContact: "Benji Dunn (Colleague) - 555-6543", history: "Polytrauma survivor" },
-  { id: "P-1015", name: "Isla Fisher", age: 46, gender: "Female", bloodGroup: "AB+", condition: "Severe Sepsis secondary to UTI", doctor: "Dr. Remy Hadley", ward: "ICU Bed 5", status: "Critical", phone: "+1 (555) 678-4321", address: "99 Sunshine Blvd, Sydney", emergencyContact: "Sacha Baron (Spouse) - 555-5432", history: "Recurrent UTIs" },
-  { id: "P-1016", name: "Lucas Scott", age: 24, gender: "Male", bloodGroup: "B-", condition: "ACL Tear & Knee Effusion", doctor: "Dr. Robert Chase", ward: "Ortho Ward 1", status: "Discharged", phone: "+1 (555) 789-3210", address: "23 Tree Hill Ln, NC", emergencyContact: "Karen Scott (Mother) - 555-4321", history: "HCM Cardiomyopathy" },
-  { id: "P-1017", name: "Zoe Saldana", age: 44, gender: "Female", bloodGroup: "A+", condition: "Acute Pancreatitis", doctor: "Dr. Gregory House", ward: "Gastro Ward 3", status: "Under Observation", phone: "+1 (555) 890-2109", address: "101 Galaxy Way, LA", emergencyContact: "Marco Perego (Spouse) - 555-3210", history: "Gallstones" },
-  { id: "P-1018", name: "Victor Stone", age: 25, gender: "Male", bloodGroup: "O+", condition: "Severe Electrical Burn Injury", doctor: "Dr. Eric Foreman", ward: "Burn Unit ICU", status: "Critical", phone: "+1 (555) 901-1098", address: "300 STAR Labs Blvd, Detroit", emergencyContact: "Silas Stone (Father) - 555-2109", history: "Prosthetic implants" },
-  { id: "P-1019", name: "Natalie Portman", age: 40, gender: "Female", bloodGroup: "AB-", condition: "Thyroid Storm", doctor: "Dr. Allison Cameron", ward: "Endocrine Ward", status: "Admitted", phone: "+1 (555) 012-0987", address: "88 Harvard Sq, Cambridge", emergencyContact: "Benjamin Millepied - 555-1098", history: "Graves Disease" },
-  { id: "P-1020", name: "Peter Parker", age: 21, gender: "Male", bloodGroup: "O-", condition: "Concussion & Smoke Inhalation", doctor: "Dr. Jessica Adams", ward: "ER Bed 4", status: "Discharged", phone: "+1 (555) 123-8901", address: "20 Ingram St, Queens", emergencyContact: "May Parker (Aunt) - 555-0123", history: "Spider bite allergy" },
-  { id: "P-1021", name: "Wanda Maximoff", age: 30, gender: "Female", bloodGroup: "B+", condition: "Severe Hyponatremia & Shock", doctor: "Dr. Lisa Cuddy", ward: "ICU Bed 2", status: "Critical", phone: "+1 (555) 234-7890", address: "100 Westview Dr, NJ", emergencyContact: "Vision (Partner) - 555-9012", history: "Psychological trauma" },
-  { id: "P-1022", name: "Bruce Wayne", age: 42, gender: "Male", bloodGroup: "O+", condition: "Multiple Contusions & Shoulder Dislocation", doctor: "Dr. Robert Chase", ward: "VIP Suite 1", status: "Stable", phone: "+1 (555) 345-6781", address: "1007 Mountain Drive, Gotham", emergencyContact: "Alfred Pennyworth - 555-8902", history: "Repeated physical trauma" },
-  { id: "P-1023", name: "Diana Prince", age: 35, gender: "Female", bloodGroup: "A+", condition: "Deep Incised Laceration", doctor: "Dr. Remy Hadley", ward: "Surgical Ward 2", status: "Stable", phone: "+1 (555) 456-5678", address: "77 Gateway City, DC", emergencyContact: "Steve Trevor - 555-7891", history: "None" },
-  { id: "P-1024", name: "Barry Allen", age: 27, gender: "Male", bloodGroup: "AB+", condition: "Severe Hypoglycemic Coma", doctor: "Dr. James Wilson", ward: "ER Bed 2", status: "Under Observation", phone: "+1 (555) 567-4567", address: "404 Central City Blvd", emergencyContact: "Iris West (Wife) - 555-6782", history: "Ultra-fast metabolic rate" },
-  { id: "P-1025", name: "Clark Kent", age: 36, gender: "Male", bloodGroup: "O-", condition: "Acute Toxic Exposure (Unknown Agent)", doctor: "Dr. Gregory House", ward: "Isolation Ward 1", status: "Critical", phone: "+1 (555) 678-3456", address: "321 Smallville Rd, Kansas", emergencyContact: "Lois Lane (Spouse) - 555-5673", history: "Unknown allergy" }
+  { id: "P-1001", name: "Rahul Sharma", age: 42, gender: "Male", bloodGroup: "O+", condition: "Acute Myocardial Infarction", doctor: "Dr. Rajesh Sharma", ward: "ICU Bay 3", status: "Critical", phone: "+91 98765 43210", address: "House 142, Sector 15, Chandigarh", emergencyContact: "Sunita Sharma (Spouse) - 98765 43211", history: "Hypertension, Smoking" },
+  { id: "P-1002", name: "Priya Verma", age: 29, gender: "Female", bloodGroup: "A-", condition: "Fractured Tibia & Soft Tissue Trauma", doctor: "Dr. Anish Mukherjee", ward: "Ortho Ward 1", status: "Admitted", phone: "+91 98123 45678", address: "Flat 204, Phase 7, Mohali, Punjab", emergencyContact: "Vikram Verma (Husband) - 98123 45679", history: "No previous surgeries" },
+  { id: "P-1003", name: "Ankit Singh", age: 35, gender: "Male", bloodGroup: "B+", condition: "Severe Dengue Fever & Low Platelets", doctor: "Dr. Sunita Rao", ward: "General Ward B", status: "Under Observation", phone: "+91 97654 32109", address: "SCF 45, Sector 22-D, Chandigarh", emergencyContact: "Gurpreet Singh (Brother) - 97654 32110", history: "Type 2 Diabetes" },
+  { id: "P-1004", name: "Neha Kapoor", age: 61, gender: "Female", bloodGroup: "AB+", condition: "Acute Stroke & Hemiparesis", doctor: "Dr. Priya Mehta", ward: "Neuro ICU Bed 2", status: "Critical", phone: "+91 98888 77766", address: "Kothi 89, Sector 9, Panchkula, Haryana", emergencyContact: "Rajiv Kapoor (Son) - 98888 77767", history: "Chronic Hypertension" },
+  { id: "P-1005", name: "Aman Gupta", age: 24, gender: "Male", bloodGroup: "O-", condition: "Acute Appendicitis", doctor: "Dr. Smita Deshmukh", ward: "Surgical Ward 2", status: "Pre-Op", phone: "+91 99150 12345", address: "House 512, Sector 34-C, Chandigarh", emergencyContact: "Ramesh Gupta (Father) - 99150 12346", history: "None" },
+  { id: "P-1006", name: "Sneha Patel", age: 31, gender: "Female", bloodGroup: "A+", condition: "Third-Trimester Eclampsia", doctor: "Dr. Meenakshi Joshi", ward: "Maternity ICU Bed 1", status: "Critical", phone: "+91 98722 33445", address: "Flat 401, Sector 68, Mohali", emergencyContact: "Karan Patel (Spouse) - 98722 33446", history: "First Pregnancy" },
+  { id: "P-1007", name: "Aarav Mehta", age: 7, gender: "Male", bloodGroup: "B-", condition: "Severe Asthma Attack", doctor: "Dr. Kavita Kapoor", ward: "Pediatric Bay 4", status: "Stable", phone: "+91 98144 55667", address: "House 302, Sector 40, Chandigarh", emergencyContact: "Pooja Mehta (Mother) - 98144 55668", history: "Dust Allergy" },
+  { id: "P-1008", name: "Vikram Malhotra", age: 53, gender: "Male", bloodGroup: "AB-", condition: "Coronary Artery Disease & Angina", doctor: "Dr. Suresh Iyer", ward: "CCU Bed 4", status: "Admitted", phone: "+91 98555 66778", address: "Sector 8-C, Chandigarh", emergencyContact: "Anita Malhotra (Wife) - 98555 66779", history: "High Cholesterol" },
+  { id: "P-1009", name: "Ananya Deshmukh", age: 22, gender: "Female", bloodGroup: "O+", condition: "Laceration & Burn Injuries", doctor: "Dr. Vivek Singh", ward: "Trauma Bay 2", status: "Under Observation", phone: "+91 98777 88990", address: "Phase 3B2, Mohali", emergencyContact: "Rohit Deshmukh (Brother) - 98777 88991", history: "None" },
+  { id: "P-1010", name: "Rohan Joshi", age: 48, gender: "Male", bloodGroup: "A+", condition: "Acute Renal Calculus & Colic", doctor: "Dr. Harpreet Singh", ward: "Urology Ward 1", status: "Stable", phone: "+91 98111 22334", address: "Sector 11, Panchkula", emergencyContact: "Neelam Joshi (Wife) - 98111 22335", history: "Kidney Stones" },
+  { id: "P-1011", name: "Kavya Reddy", age: 19, gender: "Female", bloodGroup: "B+", condition: "Severe Food Poisoning & Dehydration", doctor: "Dr. Sunita Rao", ward: "General Ward A", status: "Stable", phone: "+91 97800 11223", address: "Hostel 4, PU Campus, Sector 14, Chandigarh", emergencyContact: "Venkat Reddy (Father) - 97800 11224", history: "Gastritis" },
+  { id: "P-1012", name: "Rajesh Kumar", age: 67, gender: "Male", bloodGroup: "O+", condition: "Congestive Cardiac Failure", doctor: "Dr. Rajesh Sharma", ward: "ICU Bed 5", status: "Critical", phone: "+91 98150 99887", address: "Village Burail, Sector 45, Chandigarh", emergencyContact: "Amit Kumar (Son) - 98150 99888", history: "Pacemaker implanted 2019" },
+  { id: "P-1013", name: "Sunita Rao", age: 50, gender: "Female", bloodGroup: "A-", condition: "Acute Cholecystitis", doctor: "Dr. Smita Deshmukh", ward: "Surgical Ward 1", status: "Admitted", phone: "+91 98880 12345", address: "Sector 20-B, Chandigarh", emergencyContact: "Pradeep Rao (Spouse) - 98880 12346", history: "Gallbladder stones" },
+  { id: "P-1014", name: "Devansh Verma", age: 12, gender: "Male", bloodGroup: "AB+", condition: "Typhoid & High Grade Fever", doctor: "Dr. Kavita Kapoor", ward: "Pediatric Ward 2", status: "Stable", phone: "+91 98760 54321", address: "Phase 11, Mohali", emergencyContact: "Sangeeta Verma (Mother) - 98760 54322", history: "Recurrent tonsillitis" },
+  { id: "P-1015", name: "Ishaan Choudhury", age: 38, gender: "Male", bloodGroup: "O-", condition: "Traumatic Rib Fracture & Pneumothorax", doctor: "Dr. Vivek Singh", ward: "Trauma ICU Bed 1", status: "Critical", phone: "+91 98122 88776", address: "Sector 16, Panchkula", emergencyContact: "Maya Choudhury (Wife) - 98122 88777", history: "Polytrauma" }
 ];
 
 export const INITIAL_DOCTORS = [
-  { id: "DOC-101", name: "Dr. Gregory House", department: "Trauma & Emergency", specialization: "Diagnostic Medicine & Emergency Care", experience: "22 Years", availability: "Available", contact: "+1 (555) 999-0001", email: "house@stjude-hospital.org", avatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300" },
-  { id: "DOC-102", name: "Dr. Lisa Cuddy", department: "Hospital Administration / ER", specialization: "Endocrinology & Emergency Triage", experience: "18 Years", availability: "Available", contact: "+1 (555) 999-0002", email: "cuddy@stjude-hospital.org", avatar: "https://images.unsplash.com/photo-1594824813566-88855ce78907?auto=format&fit=crop&q=80&w=300" },
-  { id: "DOC-103", name: "Dr. James Wilson", department: "Oncology & Critical Care", specialization: "Palliative & Internal Medicine", experience: "20 Years", availability: "On Call", contact: "+1 (555) 999-0003", email: "wilson@stjude-hospital.org", avatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=300" },
-  { id: "DOC-104", name: "Dr. Eric Foreman", department: "Neurology", specialization: "Neuro-Trauma & Brain Injuries", experience: "15 Years", availability: "In Surgery", contact: "+1 (555) 999-0004", email: "foreman@stjude-hospital.org", avatar: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=300" },
-  { id: "DOC-105", name: "Dr. Robert Chase", department: "Orthopedics & Surgery", specialization: "Intensive Care & Trauma Surgery", experience: "14 Years", availability: "Available", contact: "+1 (555) 999-0005", email: "chase@stjude-hospital.org", avatar: "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&q=80&w=300" },
-  { id: "DOC-106", name: "Dr. Allison Cameron", department: "Cardiology", specialization: "Interventional Cardiology", experience: "13 Years", availability: "Available", contact: "+1 (555) 999-0006", email: "cameron@stjude-hospital.org", avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300" },
-  { id: "DOC-107", name: "Dr. Remy Hadley (Thirteen)", department: "Internal Medicine", specialization: "Huntingtons & Genetic Disorders", experience: "11 Years", availability: "On Call", contact: "+1 (555) 999-0007", email: "hadley@stjude-hospital.org", avatar: "https://images.unsplash.com/photo-1651008376811-b90baee60c1f?auto=format&fit=crop&q=80&w=300" },
-  { id: "DOC-108", name: "Dr. Chris Taub", department: "Plastic & Reconstruction", specialization: "Maxillofacial Trauma", experience: "19 Years", availability: "Available", contact: "+1 (555) 999-0008", email: "taub@stjude-hospital.org", avatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300" },
-  { id: "DOC-109", name: "Dr. Lawrence Kutner", department: "Sports Medicine & ER", specialization: "Resuscitation & Shock Management", experience: "10 Years", availability: "In Surgery", contact: "+1 (555) 999-0009", email: "kutner@stjude-hospital.org", avatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=300" },
-  { id: "DOC-110", name: "Dr. Jessica Adams", department: "Pediatrics", specialization: "Pediatric Emergency Medicine", experience: "9 Years", availability: "Available", contact: "+1 (555) 999-0010", email: "adams@stjude-hospital.org", avatar: "https://images.unsplash.com/photo-1594824813566-88855ce78907?auto=format&fit=crop&q=80&w=300" },
-  { id: "DOC-111", name: "Dr. Chi Park", department: "Neurology", specialization: "Stroke & Cerebrovascular Care", experience: "8 Years", availability: "Available", contact: "+1 (555) 999-0011", email: "park@stjude-hospital.org", avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300" },
-  { id: "DOC-112", name: "Dr. Martha Masters", department: "Pediatrics", specialization: "Pediatric Intensive Care", experience: "7 Years", availability: "On Call", contact: "+1 (555) 999-0012", email: "masters@stjude-hospital.org", avatar: "https://images.unsplash.com/photo-1651008376811-b90baee60c1f?auto=format&fit=crop&q=80&w=300" },
-  { id: "DOC-113", name: "Dr. Meredith Grey", department: "General Surgery", specialization: "Abdominal & Trauma Surgery", experience: "17 Years", availability: "In Surgery", contact: "+1 (555) 999-0013", email: "grey@stjude-hospital.org", avatar: "https://images.unsplash.com/photo-1594824813566-88855ce78907?auto=format&fit=crop&q=80&w=300" },
-  { id: "DOC-114", name: "Dr. Derek Shepherd", department: "Neurosurgery", specialization: "Spinal & Brain Surgery", experience: "21 Years", availability: "Available", contact: "+1 (555) 999-0014", email: "shepherd@stjude-hospital.org", avatar: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=300" },
-  { id: "DOC-115", name: "Dr. Cristina Yang", department: "Cardiothoracic Surgery", specialization: "Heart Transplantation", experience: "16 Years", availability: "Available", contact: "+1 (555) 999-0015", email: "yang@stjude-hospital.org", avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300" }
+  { id: "DOC-101", name: "Dr. Rajesh Sharma", department: "Cardiology", specialization: "Interventional Cardiology & Cardiac Arrest", experience: "24 Years", availability: "Available", contact: "+91 172 456 7801", email: "dr.sharma@sanjeevanihospital.in", avatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300" },
+  { id: "DOC-102", name: "Dr. Priya Mehta", department: "Neurology", specialization: "Neurosurgery & Acute Brain Stroke", experience: "19 Years", availability: "Available", contact: "+91 172 456 7802", email: "dr.mehta@sanjeevanihospital.in", avatar: "https://images.unsplash.com/photo-1594824813566-88855ce78907?auto=format&fit=crop&q=80&w=300" },
+  { id: "DOC-103", name: "Dr. Vivek Singh", department: "Emergency Medicine", specialization: "Level 1 Trauma & Resuscitation", experience: "16 Years", availability: "Available", contact: "+91 172 456 7803", email: "dr.singh@sanjeevanihospital.in", avatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=300" },
+  { id: "DOC-104", name: "Dr. Kavita Kapoor", department: "Pediatrics", specialization: "Pediatric Emergency & Neonatal ICU", experience: "15 Years", availability: "Available", contact: "+91 172 456 7804", email: "dr.kapoor@sanjeevanihospital.in", avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300" },
+  { id: "DOC-105", name: "Dr. Anish Mukherjee", department: "Orthopedics", specialization: "Trauma Joint Replacement & Polytrauma", experience: "18 Years", availability: "In Surgery", contact: "+91 172 456 7805", email: "dr.mukherjee@sanjeevanihospital.in", avatar: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=300" },
+  { id: "DOC-106", name: "Dr. Smita Deshmukh", department: "General Surgery", specialization: "Laparoscopic & Abdominal Emergency Surgery", experience: "14 Years", availability: "Available", contact: "+91 172 456 7806", email: "dr.deshmukh@sanjeevanihospital.in", avatar: "https://images.unsplash.com/photo-1651008376811-b90baee60c1f?auto=format&fit=crop&q=80&w=300" },
+  { id: "DOC-107", name: "Dr. Suresh Iyer", department: "Cardiology", specialization: "Cardiothoracic & Vascular Surgery", experience: "22 Years", availability: "On Call", contact: "+91 172 456 7807", email: "dr.iyer@sanjeevanihospital.in", avatar: "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&q=80&w=300" },
+  { id: "DOC-108", name: "Dr. Sunita Rao", department: "Internal Medicine", specialization: "Critical Care & Infectious Diseases", experience: "17 Years", availability: "Available", contact: "+91 172 456 7808", email: "dr.rao@sanjeevanihospital.in", avatar: "https://images.unsplash.com/photo-1594824813566-88855ce78907?auto=format&fit=crop&q=80&w=300" },
+  { id: "DOC-109", name: "Dr. Harpreet Singh", department: "Nephrology", specialization: "Dialysis & Acute Kidney Injury", experience: "13 Years", availability: "Available", contact: "+91 172 456 7809", email: "dr.hsingh@sanjeevanihospital.in", avatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=300" },
+  { id: "DOC-110", name: "Dr. Meenakshi Joshi", department: "Gynecology", specialization: "High-Risk Obstetrics & Emergency Delivery", experience: "16 Years", availability: "In Surgery", contact: "+91 172 456 7810", email: "dr.mjoshi@sanjeevanihospital.in", avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300" },
+  { id: "DOC-111", name: "Dr. Tarun Agarwal", department: "Pulmonology", specialization: "Respiratory ICU & ARDS Care", experience: "12 Years", availability: "Available", contact: "+91 172 456 7811", email: "dr.tagarwal@sanjeevanihospital.in", avatar: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=300" },
+  { id: "DOC-112", name: "Dr. Vandana Saxena", department: "Emergency Medicine", specialization: "Emergency Resuscitation & Poisoning", experience: "20 Years", availability: "Available", contact: "+91 172 456 7812", email: "dr.vsaxena@sanjeevanihospital.in", avatar: "https://images.unsplash.com/photo-1651008376811-b90baee60c1f?auto=format&fit=crop&q=80&w=300" }
 ];
 
 export const INITIAL_EMERGENCY_CASES = [
-  { id: "EM-501", patientName: "Eleanor Vance", emergencyType: "STEMI Cardiac Arrest", priority: "Red", priorityLabel: "Critical", arrivalTime: "14:15 AM", doctor: "Dr. Gregory House", status: "In Resuscitation", bedAssigned: "ICU Bed 4" },
-  { id: "EM-502", patientName: "Sophia Chen", emergencyType: "Anaphylactic Shock", priority: "Red", priorityLabel: "Critical", arrivalTime: "14:22 AM", doctor: "Dr. Lisa Cuddy", status: "Administering Epinephrine", bedAssigned: "ER Bay 3" },
-  { id: "EM-503", patientName: "Christopher Nolan", emergencyType: "Traumatic Brain Injury", priority: "Red", priorityLabel: "Critical", arrivalTime: "14:30 AM", doctor: "Dr. Derek Shepherd", status: "In Pre-Op", bedAssigned: "ICU Bed 1" },
-  { id: "EM-504", patientName: "Marcus Holloway", emergencyType: "Compound Radius Fracture", priority: "Orange", priorityLabel: "High", arrivalTime: "14:35 AM", doctor: "Dr. Robert Chase", status: "Casting & Stabilization", bedAssigned: "Ortho 2" },
-  { id: "EM-505", patientName: "James Wilson Jr.", emergencyType: "Pediatric High Fever & Seizure", priority: "Red", priorityLabel: "Critical", arrivalTime: "14:40 AM", doctor: "Dr. Jessica Adams", status: "Cooling & Anticonvulsant", bedAssigned: "Pediatric ICU" },
-  { id: "EM-506", patientName: "David Kim", emergencyType: "Acute Perforated Appendicitis", priority: "Orange", priorityLabel: "High", arrivalTime: "14:48 AM", doctor: "Dr. Meredith Grey", status: "Scheduled Appendectomy", bedAssigned: "Surgical 1" },
-  { id: "EM-507", patientName: "Devon Miller", emergencyType: "Status Asthmaticus", priority: "Yellow", priorityLabel: "Medium", arrivalTime: "14:52 AM", doctor: "Dr. James Wilson", status: "Nebulizer Therapy", bedAssigned: "Pulmonary 1" },
-  { id: "EM-508", patientName: "Rachel Green", emergencyType: "Obstetric Abdominal Distress", priority: "Yellow", priorityLabel: "Medium", arrivalTime: "15:05 AM", doctor: "Dr. Lisa Cuddy", status: "Fetal Ultrasound", bedAssigned: "Maternity Bay" },
-  { id: "EM-509", patientName: "Amanda Martinez", emergencyType: "Severe Intractable Migraine", priority: "Green", priorityLabel: "Stable", arrivalTime: "15:12 AM", doctor: "Dr. Remy Hadley", status: "IV Hydration", bedAssigned: "General A" },
-  { id: "EM-510", patientName: "Victor Stone", emergencyType: "Third-Degree Burn Injury", priority: "Red", priorityLabel: "Critical", arrivalTime: "15:20 AM", doctor: "Dr. Eric Foreman", status: "Debridement in ICU", bedAssigned: "Burn ICU" }
+  { id: "EM-901", patientName: "Rahul Sharma", emergencyType: "Acute STEMI Cardiac Arrest", priority: "Red", priorityLabel: "Critical", arrivalTime: "10:14 AM", doctor: "Dr. Rajesh Sharma", status: "Under Cardiac Resuscitation", bedAssigned: "ICU Bay 3" },
+  { id: "EM-902", patientName: "Neha Kapoor", emergencyType: "Acute Ischemic Stroke", priority: "Red", priorityLabel: "Critical", arrivalTime: "10:22 AM", doctor: "Dr. Priya Mehta", status: "Administering Thrombolysis", bedAssigned: "Neuro ICU 2" },
+  { id: "EM-903", patientName: "Sneha Patel", emergencyType: "Severe Eclampsia & Seizure", priority: "Red", priorityLabel: "Critical", arrivalTime: "10:35 AM", doctor: "Dr. Meenakshi Joshi", status: "In Emergency OT", bedAssigned: "Maternity ICU 1" },
+  { id: "EM-904", patientName: "Ishaan Choudhury", emergencyType: "Highway Collision Polytrauma", priority: "Red", priorityLabel: "Critical", arrivalTime: "10:40 AM", doctor: "Dr. Vivek Singh", status: "Chest Tube Insertion", bedAssigned: "Trauma ICU 1" },
+  { id: "EM-905", patientName: "Priya Verma", emergencyType: "Compound Tibia Fracture", priority: "Orange", priorityLabel: "High", arrivalTime: "10:48 AM", doctor: "Dr. Anish Mukherjee", status: "Splinting & Analgesia", bedAssigned: "Ortho 1" },
+  { id: "EM-906", patientName: "Aman Gupta", emergencyType: "Perforated Appendicitis", priority: "Orange", priorityLabel: "High", arrivalTime: "11:02 AM", doctor: "Dr. Smita Deshmukh", status: "Pre-Op Evaluation", bedAssigned: "Surgical 2" },
+  { id: "EM-907", patientName: "Ankit Singh", emergencyType: "Severe Dengue & Thrombocytopenia", priority: "Yellow", priorityLabel: "Medium", arrivalTime: "11:15 AM", doctor: "Dr. Sunita Rao", status: "Platelet Transfusion", bedAssigned: "General B" },
+  { id: "EM-908", patientName: "Aarav Mehta", emergencyType: "Acute Pediatric Wheezing", priority: "Yellow", priorityLabel: "Medium", arrivalTime: "11:28 AM", doctor: "Dr. Kavita Kapoor", status: "Nebulizer Therapy", bedAssigned: "Pediatric Bay 4" }
 ];
 
 export const INITIAL_AMBULANCES = [
-  { id: "AMB-01", number: "MED-911-A", driver: "Johnathan Wick", location: "Downtown Sector 4", status: "On Duty", ETA: "4 mins", contact: "+1 (555) 777-0001", type: "Advanced Life Support (ALS)" },
-  { id: "AMB-02", number: "MED-911-B", driver: "Dominic Toretto", location: "Highway 101 Mile 42", status: "On Duty", ETA: "8 mins", contact: "+1 (555) 777-0002", type: "Trauma Care Ambulance" },
-  { id: "AMB-03", number: "MED-911-C", driver: "Frank Martin", location: "Hospital ER Bay 1", status: "Available", ETA: "Immediate", contact: "+1 (555) 777-0003", type: "Cardiac ALS Ambulance" },
-  { id: "AMB-04", number: "MED-911-D", driver: "Sarah Connor", location: "Westside Industrial Park", status: "On Duty", ETA: "12 mins", contact: "+1 (555) 777-0004", type: "Basic Life Support (BLS)" },
-  { id: "AMB-05", number: "MED-911-E", driver: "Roy Miller", location: "Hospital Bay 2", status: "Available", ETA: "Immediate", contact: "+1 (555) 777-0005", type: "Pediatric Transport Unit" },
-  { id: "AMB-06", number: "MED-911-F", driver: "Brian O'Conner", location: "Northside Airport Hub", status: "On Duty", ETA: "6 mins", contact: "+1 (555) 777-0006", type: "Neonatal Intensive Transport" },
-  { id: "AMB-07", number: "MED-911-G", driver: "Letty Ortiz", location: "Central Service Depot", status: "Maintenance", ETA: "N/A", contact: "+1 (555) 777-0007", type: "Heavy Duty Mobile ICU" },
-  { id: "AMB-08", number: "MED-911-H", driver: "Luke Hobbs", location: "Eastside Harbor District", status: "Available", ETA: "Immediate", contact: "+1 (555) 777-0008", type: "Trauma Care Ambulance" },
-  { id: "AMB-09", number: "MED-911-I", driver: "Deckard Shaw", location: "Hospital Bay 3", status: "Available", ETA: "Immediate", contact: "+1 (555) 777-0009", type: "ALS Ambulance" },
-  { id: "AMB-10", number: "MED-911-J", driver: "Mia Toretto", location: "Southside Community Center", status: "On Duty", ETA: "5 mins", contact: "+1 (555) 777-0010", type: "Basic Life Support" }
+  { id: "AMB-01", number: "PB01AB1234", driver: "Gurpreet Singh", location: "Sector 17 Plaza, Chandigarh", status: "On Route", ETA: "5 mins", contact: "+91 98765 10801", type: "Advanced Life Support (ALS)" },
+  { id: "AMB-02", number: "CH02CD5678", driver: "Manjit Sharma", location: "Tribune Chowk, Chandigarh", status: "On Route", ETA: "8 mins", contact: "+91 98765 10802", type: "Cardiac Resuscitation Ambulance" },
+  { id: "AMB-03", number: "HR26XY1122", driver: "Rajesh Saini", location: "Hospital Bay 1, Sector 32", status: "Available", ETA: "Immediate", contact: "+91 98765 10803", type: "Advanced Life Support (ALS)" },
+  { id: "AMB-04", number: "PB65BC9988", driver: "Harinder Gill", location: "Phase 7 Market, Mohali", status: "On Route", ETA: "12 mins", contact: "+91 98765 10804", type: "Basic Life Support (BLS)" },
+  { id: "AMB-05", number: "CH01EF4321", driver: "Suresh Kumar", location: "Hospital Bay 2", status: "Available", ETA: "Immediate", contact: "+91 98765 10805", type: "Neonatal Transport Unit" },
+  { id: "AMB-06", number: "HR10PQ8877", driver: "Amit Verma", location: "Zirakpur Flyover", status: "On Route", ETA: "7 mins", contact: "+91 98765 10806", type: "Trauma Care Ambulance" },
+  { id: "AMB-07", number: "PB11MN3456", driver: "Balwinder Singh", location: "Central Workshop", status: "Maintenance", ETA: "N/A", contact: "+91 98765 10807", type: "Mobile ICU Unit" },
+  { id: "AMB-08", number: "CH04JK7766", driver: "Deepak Yadav", location: "Sector 43 Bus Stand", status: "Available", ETA: "Immediate", contact: "+91 98765 10808", type: "Cardiac ALS Ambulance" },
+  { id: "AMB-09", number: "HR51RS2211", driver: "Vikas Rana", location: "Hospital Bay 3", status: "Available", ETA: "Immediate", contact: "+91 98765 10809", type: "Basic Life Support (BLS)" },
+  { id: "AMB-10", number: "PB08UV5544", driver: "Jaspal Kaur", location: "Panchkula Sector 20", status: "Available", ETA: "Immediate", contact: "+91 98765 10810", type: "ALS Trauma Ambulance" }
 ];
 
-export const INITIAL_BEDS = Array.from({ length: 120 }, (_, i) => {
+export const INITIAL_BEDS = Array.from({ length: 170 }, (_, i) => {
   const id = i + 1;
-  let type = "General";
-  if (id <= 25) type = "ICU Bed";
-  else if (id <= 55) type = "Emergency Bed";
+  let type = "General Bed";
+  if (id <= 22) type = "ICU Bed";
+  else if (id <= 50) type = "Emergency Bed";
 
   let status = "Available";
   if (id % 3 === 0) status = "Occupied";
-  else if (id % 11 === 0) status = "Reserved";
+  else if (id % 13 === 0) status = "Reserved";
 
   return {
     id: `BED-${id < 10 ? '00' : id < 100 ? '0' : ''}${id}`,
-    bedNumber: `Ward-${type === 'ICU Bed' ? 'ICU' : type === 'Emergency Bed' ? 'ER' : 'GEN'}-${id}`,
+    bedNumber: `Bed-${type === 'ICU Bed' ? 'ICU' : type === 'Emergency Bed' ? 'ER' : 'GEN'}-${id}`,
     type,
     status,
-    patientAssigned: status === 'Occupied' ? `Patient #${1000 + (id % 25) + 1}` : 'None',
-    floor: type === 'ICU Bed' ? 'Floor 3' : type === 'Emergency Bed' ? 'Floor 1 (ER)' : 'Floor 2'
+    patientAssigned: status === 'Occupied' ? `Patient #${1000 + (id % 15) + 1}` : 'None',
+    floor: type === 'ICU Bed' ? 'Floor 3 (ICU Tower)' : type === 'Emergency Bed' ? 'Floor 1 (ER Resuscitation)' : 'Floor 2 (General Ward)'
   };
 });
 
 export const INITIAL_BLOOD_BANK = [
-  { id: "BB-01", group: "A+", units: 28, minRequired: 15, status: "Adequate", color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
-  { id: "BB-02", group: "A-", units: 8, minRequired: 10, status: "Low Stock", color: "text-amber-600 bg-amber-50 border-amber-200" },
-  { id: "BB-03", group: "B+", units: 34, minRequired: 20, status: "Adequate", color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
-  { id: "BB-04", group: "B-", units: 5, minRequired: 8, status: "Critical Shortage", color: "text-red-600 bg-red-50 border-red-200" },
-  { id: "BB-05", group: "AB+", units: 19, minRequired: 10, status: "Adequate", color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
-  { id: "BB-06", group: "AB-", units: 3, minRequired: 5, status: "Critical Shortage", color: "text-red-600 bg-red-50 border-red-200" },
-  { id: "BB-07", group: "O+", units: 42, minRequired: 25, status: "Adequate", color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
-  { id: "BB-08", group: "O-", units: 6, minRequired: 12, status: "Low Stock", color: "text-amber-600 bg-amber-50 border-amber-200" }
+  { id: "BB-01", group: "A+", units: 65, minRequired: 30, status: "Adequate Stock", color: "text-emerald-700 bg-emerald-50 border-emerald-200" },
+  { id: "BB-02", group: "A-", units: 14, minRequired: 15, status: "Low Stock", color: "text-amber-700 bg-amber-50 border-amber-200" },
+  { id: "BB-03", group: "B+", units: 82, minRequired: 40, status: "Adequate Stock", color: "text-emerald-700 bg-emerald-50 border-emerald-200" },
+  { id: "BB-04", group: "B-", units: 9, minRequired: 15, status: "Critical Shortage", color: "text-red-700 bg-red-50 border-red-200" },
+  { id: "BB-05", group: "AB+", units: 48, minRequired: 20, status: "Adequate Stock", color: "text-emerald-700 bg-emerald-50 border-emerald-200" },
+  { id: "BB-06", group: "AB-", units: 6, minRequired: 10, status: "Critical Shortage", color: "text-red-700 bg-red-50 border-red-200" },
+  { id: "BB-07", group: "O+", units: 88, minRequired: 50, status: "Adequate Stock", color: "text-emerald-700 bg-emerald-50 border-emerald-200" },
+  { id: "BB-08", group: "O-", units: 8, minRequired: 20, status: "Low Stock", color: "text-amber-700 bg-amber-50 border-amber-200" }
 ];
 
-export const WEEKLY_EMERGENCY_TREND = [
-  { day: "Mon", emergencyCases: 38, admissions: 24, discharges: 19 },
-  { day: "Tue", emergencyCases: 45, admissions: 30, discharges: 22 },
-  { day: "Wed", emergencyCases: 52, admissions: 35, discharges: 28 },
-  { day: "Thu", emergencyCases: 49, admissions: 31, discharges: 26 },
-  { day: "Fri", emergencyCases: 61, admissions: 42, discharges: 33 },
-  { day: "Sat", emergencyCases: 68, admissions: 48, discharges: 30 },
-  { day: "Sun", emergencyCases: 55, admissions: 36, discharges: 29 }
+export const DAILY_ADMISSIONS_TREND = [
+  { day: "Mon", admissions: 112, emergencyArrivals: 32, discharges: 94 },
+  { day: "Tue", admissions: 124, emergencyArrivals: 38, discharges: 102 },
+  { day: "Wed", admissions: 135, emergencyArrivals: 41, discharges: 110 },
+  { day: "Thu", admissions: 128, emergencyArrivals: 34, discharges: 105 },
+  { day: "Fri", admissions: 142, emergencyArrivals: 46, discharges: 118 },
+  { day: "Sat", admissions: 150, emergencyArrivals: 52, discharges: 125 },
+  { day: "Sun", admissions: 127, emergencyArrivals: 34, discharges: 98 }
+];
+
+export const EMERGENCY_RESPONSE_SPEED = [
+  { timeRange: "0-3 Mins", count: 42 },
+  { timeRange: "3-5 Mins", count: 35 },
+  { timeRange: "5-8 Mins", count: 18 },
+  { timeRange: "8+ Mins", count: 5 }
 ];
 
 export const BED_OCCUPANCY_DATA = [
-  { name: "ICU Beds", occupied: 18, total: 25 },
-  { name: "Emergency Beds", occupied: 22, total: 30 },
-  { name: "General Wards", occupied: 45, total: 65 }
+  { name: "ICU Beds", occupied: 28, total: 50 },
+  { name: "Emergency Beds", occupied: 32, total: 50 },
+  { name: "General Wards", occupied: 110, total: 170 }
 ];
 
 export const DOCTOR_WORKLOAD_DATA = [
   { department: "Emergency", activeCases: 14 },
-  { department: "Cardiology", activeCases: 9 },
-  { department: "Trauma & Ortho", activeCases: 11 },
-  { department: "Neurology", activeCases: 7 },
-  { department: "Pediatric ICU", activeCases: 6 }
+  { department: "Cardiology", activeCases: 12 },
+  { department: "Orthopedics", activeCases: 9 },
+  { department: "Neurology", activeCases: 8 },
+  { department: "Pediatrics", activeCases: 7 }
 ];

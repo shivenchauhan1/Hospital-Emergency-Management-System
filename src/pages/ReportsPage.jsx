@@ -24,7 +24,8 @@ import {
   CartesianGrid 
 } from 'recharts';
 import { 
-  WEEKLY_EMERGENCY_TREND, 
+  DAILY_ADMISSIONS_TREND, 
+  EMERGENCY_RESPONSE_SPEED, 
   BED_OCCUPANCY_DATA, 
   DOCTOR_WORKLOAD_DATA 
 } from '../data/hospitalStore';
@@ -33,7 +34,7 @@ export default function ReportsPage() {
   const [downloadNotice, setDownloadNotice] = useState('');
 
   const handleDownloadPDF = () => {
-    setDownloadNotice('Generating PDF Clinical Audit Report...');
+    setDownloadNotice('Generating Sanjeevani Clinical Audit Report PDF...');
     setTimeout(() => {
       setDownloadNotice('✅ PDF Clinical Report Downloaded Successfully!');
       setTimeout(() => setDownloadNotice(''), 3000);
@@ -41,26 +42,26 @@ export default function ReportsPage() {
   };
 
   const handleDownloadExcel = () => {
-    setDownloadNotice('Exporting Hospital Dataset to Excel (.xlsx)...');
+    setDownloadNotice('Exporting Sanjeevani Hospital Dataset to Excel (.xlsx)...');
     setTimeout(() => {
       setDownloadNotice('✅ Excel Data Export Downloaded Successfully!');
       setTimeout(() => setDownloadNotice(''), 3000);
     }, 1200);
   };
 
-  const PIE_COLORS = ['#0F766E', '#DC2626', '#3B82F6'];
+  const PIE_COLORS = ['#00695C', '#D32F2F', '#3B82F6'];
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="w-full space-y-8 pb-12">
       {/* Header Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm">
+      <div className="w-full flex flex-wrap items-center justify-between gap-4 bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-3">
-            <BarChart3 className="w-8 h-8 text-[#0F766E]" />
+            <BarChart3 className="w-8 h-8 text-[#00695C]" />
             Clinical Analytics & Hospital Reports
           </h1>
           <p className="text-slate-500 text-xs sm:text-sm mt-1">
-            Statistical breakdown of patient intake, emergency response speed, ward occupancy, and specialist workload.
+            Performance analytics covering daily patient admissions, emergency response times, bed occupancy, and specialist workload.
           </p>
         </div>
 
@@ -76,7 +77,7 @@ export default function ReportsPage() {
 
           <button
             onClick={handleDownloadExcel}
-            className="px-4 py-2.5 rounded-xl font-bold text-xs bg-[#0F766E] text-white hover:bg-teal-800 transition-all flex items-center gap-2 shadow-sm"
+            className="px-4 py-2.5 rounded-xl font-bold text-xs bg-[#00695C] text-white hover:bg-teal-800 transition-all flex items-center gap-2 shadow-sm"
           >
             <Download className="w-4 h-4" />
             <span>Export Excel</span>
@@ -85,41 +86,41 @@ export default function ReportsPage() {
       </div>
 
       {downloadNotice && (
-        <div className="p-4 rounded-2xl bg-teal-50 border border-teal-200 text-teal-900 text-xs font-bold text-center animate-fade-in">
+        <div className="w-full p-4 rounded-2xl bg-teal-50 border border-teal-200 text-teal-900 text-xs font-bold text-center animate-fade-in">
           {downloadNotice}
         </div>
       )}
 
       {/* CHART 1 & 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Daily Admissions & Discharges */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+        {/* Chart 1: Daily Admissions & Discharges */}
         <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
-          <h3 className="text-base font-extrabold text-slate-900">Daily Admissions vs. Discharges</h3>
+          <h3 className="text-base font-extrabold text-slate-900">1. Daily Patient Admissions Trend</h3>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={WEEKLY_EMERGENCY_TREND}>
+              <LineChart data={DAILY_ADMISSIONS_TREND}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
                 <XAxis dataKey="day" stroke="#64748B" fontSize={12} />
                 <YAxis stroke="#64748B" fontSize={12} />
                 <Tooltip contentStyle={{ backgroundColor: '#0F172A', borderRadius: '12px', color: '#fff' }} />
-                <Line type="monotone" dataKey="admissions" name="Admissions" stroke="#0F766E" strokeWidth={3} />
-                <Line type="monotone" dataKey="discharges" name="Discharges" stroke="#3B82F6" strokeWidth={3} />
+                <Line type="monotone" dataKey="admissions" name="Patient Admissions" stroke="#00695C" strokeWidth={3} />
+                <Line type="monotone" dataKey="discharges" name="Patient Discharges" stroke="#3B82F6" strokeWidth={3} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Emergency Triage Cases */}
+        {/* Chart 2: Emergency Response Time Speed */}
         <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
-          <h3 className="text-base font-extrabold text-slate-900">Emergency Triage Arrivals</h3>
+          <h3 className="text-base font-extrabold text-slate-900">2. Emergency Response Speed (Arrival to Bed)</h3>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={WEEKLY_EMERGENCY_TREND}>
+              <BarChart data={EMERGENCY_RESPONSE_SPEED}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="day" stroke="#64748B" fontSize={12} />
+                <XAxis dataKey="timeRange" stroke="#64748B" fontSize={12} />
                 <YAxis stroke="#64748B" fontSize={12} />
                 <Tooltip contentStyle={{ backgroundColor: '#0F172A', borderRadius: '12px', color: '#fff' }} />
-                <Bar dataKey="emergencyCases" name="Emergency Arrivals" fill="#DC2626" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="count" name="Patient Cases" fill="#D32F2F" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -127,10 +128,10 @@ export default function ReportsPage() {
       </div>
 
       {/* CHART 3 & 4 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Bed Occupancy Distribution */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+        {/* Chart 3: Bed Occupancy Distribution */}
         <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
-          <h3 className="text-base font-extrabold text-slate-900">Bed Occupancy Distribution Across Wards</h3>
+          <h3 className="text-base font-extrabold text-slate-900">3. Bed Occupancy Across ICU & Wards</h3>
           <div className="h-64 w-full flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -153,9 +154,9 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Doctor Workload Distribution */}
+        {/* Chart 4: Doctor Workload */}
         <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
-          <h3 className="text-base font-extrabold text-slate-900">Doctor Active Workload by Department</h3>
+          <h3 className="text-base font-extrabold text-slate-900">4. Consultant Doctor Active Workload</h3>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={DOCTOR_WORKLOAD_DATA} layout="vertical">
@@ -163,7 +164,7 @@ export default function ReportsPage() {
                 <XAxis type="number" stroke="#64748B" fontSize={12} />
                 <YAxis dataKey="department" type="category" stroke="#64748B" fontSize={11} width={110} />
                 <Tooltip contentStyle={{ backgroundColor: '#0F172A', borderRadius: '12px', color: '#fff' }} />
-                <Bar dataKey="activeCases" name="Active Patients Assigned" fill="#14B8A6" radius={[0, 6, 6, 0]} />
+                <Bar dataKey="activeCases" name="Active Patients Assigned" fill="#26A69A" radius={[0, 6, 6, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

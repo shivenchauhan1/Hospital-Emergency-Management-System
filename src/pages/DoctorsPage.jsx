@@ -18,7 +18,8 @@ export default function DoctorsPage({ doctors }) {
   const [selectedDept, setSelectedDept] = useState('ALL');
   const [selectedDoctor, setSelectedDoctor] = useState(null);
 
-  const departments = ['ALL', 'Trauma & Emergency', 'Cardiology', 'Neurology', 'Orthopedics & Surgery', 'Pediatrics', 'Internal Medicine', 'Neurosurgery'];
+  // Exact Requested Departments
+  const departments = ['ALL', 'Cardiology', 'Neurology', 'Orthopedics', 'Emergency Medicine', 'Pediatrics', 'General Surgery', 'Nephrology', 'Gynecology'];
 
   const filteredDoctors = doctors.filter((doc) => {
     const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -28,47 +29,47 @@ export default function DoctorsPage({ doctors }) {
   });
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="w-full space-y-8 pb-12">
       {/* Header Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm">
+      <div className="w-full flex flex-wrap items-center justify-between gap-4 bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-3">
-            <Stethoscope className="w-8 h-8 text-[#0F766E]" />
-            Medical Specialists & Doctors Directory
+            <Stethoscope className="w-8 h-8 text-[#00695C]" />
+            Medical Specialists & Consultant Doctors
           </h1>
           <p className="text-slate-500 text-xs sm:text-sm mt-1">
-            Board-certified trauma surgeons, emergency physicians, cardiologists, and pediatricians on duty.
+            NABH accredited senior consultants, cardiologists, neurosurgeons, orthopedic surgeons, and emergency physicians.
           </p>
         </div>
-        <div className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-xl">
-          Total Specialists: {doctors.length}
+        <div className="text-xs font-mono font-bold text-[#00695C] bg-teal-50 px-3.5 py-2 rounded-xl border border-teal-200">
+          Total On-Duty Specialists: {doctors.length}
         </div>
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="p-4 sm:p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
+      <div className="w-full p-4 sm:p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="relative flex-1 min-w-[260px]">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
             <input
               type="text"
-              placeholder="Search by Doctor Name or Specialization..."
+              placeholder="Search by Doctor Name (e.g. Dr. Rajesh Sharma) or Specialization..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#0F766E]"
+              className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#00695C]"
             />
           </div>
         </div>
 
         {/* Department Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1 w-full">
           {departments.map((dept) => (
             <button
               key={dept}
               onClick={() => setSelectedDept(dept)}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                 selectedDept === dept
-                  ? 'bg-[#0F766E] text-white shadow-sm'
+                  ? 'bg-[#00695C] text-white shadow-sm'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
@@ -79,7 +80,7 @@ export default function DoctorsPage({ doctors }) {
       </div>
 
       {/* DOCTOR CARDS GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
         {filteredDoctors.map((doc) => (
           <div
             key={doc.id}
@@ -91,11 +92,11 @@ export default function DoctorsPage({ doctors }) {
                 <img
                   src={doc.avatar}
                   alt={doc.name}
-                  className="w-16 h-16 rounded-2xl object-cover border-2 border-teal-100 shadow-sm"
+                  className="w-16 h-16 rounded-2xl object-cover border-2 border-teal-200 shadow-sm"
                 />
                 <div>
                   <h3 className="text-base font-extrabold text-slate-900">{doc.name}</h3>
-                  <div className="text-xs font-bold text-[#0F766E]">{doc.department}</div>
+                  <div className="text-xs font-bold text-[#00695C]">{doc.department}</div>
                   <span className={`inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
                     doc.availability === 'Available' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
                     doc.availability === 'In Surgery' ? 'bg-red-100 text-red-800 border border-red-200' :
@@ -111,8 +112,8 @@ export default function DoctorsPage({ doctors }) {
                 <div className="text-slate-400 font-bold text-[10px] uppercase">Specialization:</div>
                 <div className="font-bold text-slate-800">{doc.specialization}</div>
                 <div className="text-slate-500 flex items-center gap-1.5 pt-1 text-[11px]">
-                  <Award className="w-3.5 h-3.5 text-teal-600" />
-                  <span>Experience: <strong>{doc.experience}</strong></span>
+                  <Award className="w-3.5 h-3.5 text-[#00695C]" />
+                  <span>Clinical Experience: <strong>{doc.experience}</strong></span>
                 </div>
               </div>
 
@@ -132,9 +133,9 @@ export default function DoctorsPage({ doctors }) {
             {/* Profile Action */}
             <button
               onClick={() => setSelectedDoctor(doc)}
-              className="w-full py-2.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-800 hover:bg-[#0F766E] hover:text-white transition-colors text-center shadow-sm"
+              className="w-full py-2.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-800 hover:bg-[#00695C] hover:text-white transition-colors text-center shadow-sm"
             >
-              View Full Doctor Profile
+              View Consultant Profile
             </button>
           </div>
         ))}
@@ -159,7 +160,7 @@ export default function DoctorsPage({ doctors }) {
               />
               <div>
                 <h3 className="text-xl font-extrabold text-slate-900">{selectedDoctor.name}</h3>
-                <p className="text-xs font-bold text-[#0F766E]">{selectedDoctor.department}</p>
+                <p className="text-xs font-bold text-[#00695C]">{selectedDoctor.department}</p>
                 <p className="text-xs font-mono text-slate-400">{selectedDoctor.id}</p>
               </div>
             </div>
@@ -171,20 +172,20 @@ export default function DoctorsPage({ doctors }) {
               </div>
               <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200">
                 <div>
-                  <span className="text-slate-400 text-[10px] uppercase font-bold block">Years of Experience:</span>
+                  <span className="text-slate-400 text-[10px] uppercase font-bold block">Experience:</span>
                   <span className="font-extrabold text-slate-800">{selectedDoctor.experience}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 text-[10px] uppercase font-bold block">Availability Status:</span>
-                  <span className="font-extrabold text-teal-700">{selectedDoctor.availability}</span>
+                  <span className="text-slate-400 text-[10px] uppercase font-bold block">Status:</span>
+                  <span className="font-extrabold text-teal-800">{selectedDoctor.availability}</span>
                 </div>
               </div>
             </div>
 
             <div className="space-y-2 text-xs">
-              <strong className="text-slate-900 block font-bold">Emergency Contact Details:</strong>
+              <strong className="text-slate-900 block font-bold">Contact Extension:</strong>
               <div className="p-3 rounded-xl bg-teal-50/60 border border-teal-200 space-y-1 font-mono text-slate-700">
-                <div>Direct Extension: {selectedDoctor.contact}</div>
+                <div>Extension: {selectedDoctor.contact}</div>
                 <div>Email: {selectedDoctor.email}</div>
               </div>
             </div>
@@ -192,7 +193,7 @@ export default function DoctorsPage({ doctors }) {
             <div className="text-right">
               <button
                 onClick={() => setSelectedDoctor(null)}
-                className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-[#0F766E]"
+                className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-[#00695C]"
               >
                 Close Profile
               </button>
