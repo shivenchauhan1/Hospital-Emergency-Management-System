@@ -1,5 +1,5 @@
 import React from 'react';
-import { HeartPulse, Github, ExternalLink, Activity } from 'lucide-react';
+import { HeartPulse, GitBranch, ExternalLink, Activity } from 'lucide-react';
 
 export default function Navbar() {
   return (
@@ -30,7 +30,7 @@ export default function Navbar() {
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800 hover:bg-slate-800 hover:text-white transition-all shadow-sm"
           >
-            <Github className="w-3.5 h-3.5 text-rose-400" />
+            <GitBranch className="w-3.5 h-3.5 text-rose-400" />
             <span className="hidden sm:inline">GitHub Repository</span>
           </a>
 

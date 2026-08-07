@@ -1,5 +1,5 @@
 import React from 'react';
-import { HeartPulse, Github, Heart } from 'lucide-react';
+import { HeartPulse, GitBranch, Heart } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -22,7 +22,7 @@ export default function Footer() {
             rel="noopener noreferrer"
             className="hover:text-rose-400 transition-colors flex items-center gap-1"
           >
-            <Github className="w-3.5 h-3.5 text-rose-400" />
+            <GitBranch className="w-3.5 h-3.5 text-rose-400" />
             GitHub Repo
           </a>
           <span className="text-slate-700">•</span>
