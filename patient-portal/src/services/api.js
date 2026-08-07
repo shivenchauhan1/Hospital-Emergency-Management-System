@@ -4,11 +4,11 @@ import {
   INITIAL_AMBULANCES, INITIAL_BEDS 
 } from '../data/hospitalStore';
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://hospital-emergency-management-system-1qmx.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 5000
+  timeout: 10000
 });
 
 export const fetchDoctors = async () => {
@@ -72,10 +72,11 @@ export const fetchEmergencies = async () => {
 
 export const postEmergency = async (formData) => {
   try {
+    console.log('Sending POST /api/emergency to:', API_BASE_URL);
     const res = await api.post('/emergency', formData);
     return res.data;
   } catch (e) {
-    console.warn('Backend POST failed, returning generated emergency case');
+    console.error('Backend POST failed:', e);
     return {
       success: true,
       data: {

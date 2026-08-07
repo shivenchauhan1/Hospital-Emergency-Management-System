@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://hospital-emergency-management-system-1qmx.onrender.com';
 
 export const socket = io(SOCKET_URL, {
   autoConnect: true,
@@ -10,7 +10,7 @@ export const socket = io(SOCKET_URL, {
 });
 
 socket.on('connect', () => {
-  console.log('⚡ Connected to Sanjeevani Real-Time Socket Engine');
+  console.log('⚡ Connected to Sanjeevani Real-Time Socket Engine at:', SOCKET_URL);
 });
 
 socket.on('disconnect', () => {
