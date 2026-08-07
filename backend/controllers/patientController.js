@@ -9,10 +9,37 @@ exports.getPatients = async (req, res) => {
   }
 };
 
+exports.registerPatient = async (req, res) => {
+  try {
+    const count = await Patient.countDocuments();
+    const patientId = `PAT2026${String(count + 1).padStart(5, '0')}`;
+    const newPatient = await Patient.create({
+      id: patientId,
+      name: req.body.name || 'Anonymous Patient',
+      age: req.body.age || 30,
+      gender: req.body.gender || 'Male',
+      phone: req.body.phone || '+91 98765 00000',
+      address: req.body.address || 'Sector 32, Chandigarh',
+      bloodGroup: req.body.bloodGroup || 'O+',
+      status: 'Registered',
+      ward: req.body.department || 'General OPD Care',
+      attendingDoctor: req.body.doctorPreference || 'Dr. Rajesh Sharma'
+    });
+    res.status(201).json({ 
+      success: true, 
+      message: 'Normal Patient Registration Successful', 
+      patientId: patientId, 
+      data: newPatient 
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 exports.createPatient = async (req, res) => {
   try {
     const count = await Patient.countDocuments();
-    const patientId = `SAN-2026-${String(count + 1001)}`;
+    const patientId = `PAT2026${String(count + 1).padStart(5, '0')}`;
     const newPatient = await Patient.create({
       id: patientId,
       name: req.body.name || 'New Patient',

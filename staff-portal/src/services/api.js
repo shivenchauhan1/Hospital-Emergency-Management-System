@@ -21,6 +21,46 @@ export const fetchStaffEmergencies = async () => {
   return INITIAL_EMERGENCY_CASES;
 };
 
+export const fetchAppointmentsAPI = async () => {
+  try {
+    const res = await api.get('/appointment');
+    if (res.data && res.data.data && res.data.data.length > 0) return res.data.data;
+  } catch (e) {
+    console.warn('Backend API unavailable, returning seed appointments');
+  }
+  return [
+    { id: 'APT202600001', patientName: 'Rahul Sharma', doctorName: 'Dr. Rajesh Sharma', department: 'Cardiology', date: '2026-08-08', timeSlot: '10:00 AM - 10:30 AM', status: 'Appointment Requested' },
+    { id: 'APT202600002', patientName: 'Pooja Verma', doctorName: 'Dr. Priya Mehta', department: 'Neurology', date: '2026-08-08', timeSlot: '02:00 PM - 02:30 PM', status: 'Approved' }
+  ];
+};
+
+export const approveAppointmentAPI = async (id) => {
+  try {
+    const res = await api.put('/appointment/approve', { id });
+    return res.data;
+  } catch (e) {
+    console.warn('Backend approve appointment failed');
+  }
+};
+
+export const assignDoctorAppointmentAPI = async (id, doctorName) => {
+  try {
+    const res = await api.put('/appointment/assignDoctor', { id, doctorName });
+    return res.data;
+  } catch (e) {
+    console.warn('Backend assign doctor appointment failed');
+  }
+};
+
+export const completeAppointmentAPI = async (id) => {
+  try {
+    const res = await api.put('/appointment/complete', { id });
+    return res.data;
+  } catch (e) {
+    console.warn('Backend complete appointment failed');
+  }
+};
+
 export const fetchPatients = async () => {
   try {
     const res = await api.get('/patients');
@@ -29,9 +69,8 @@ export const fetchPatients = async () => {
     console.warn('Backend API unavailable, returning seed patients');
   }
   return [
-    { id: 'SAN-2026-1001', name: 'Rahul Sharma', age: 42, gender: 'Male', phone: '+91 98765 43210', address: 'Sector 32, Chandigarh', bloodGroup: 'O+', status: 'Admitted', ward: 'ICU Tower', bedNumber: 'Bed-ICU-01', attendingDoctor: 'Dr. Rajesh Sharma', medicalHistory: 'Hypertension, Cardiac Observation' },
-    { id: 'SAN-2026-1002', name: 'Pooja Verma', age: 34, gender: 'Female', phone: '+91 98765 54321', address: 'Sector 17, Chandigarh', bloodGroup: 'A+', status: 'Admitted', ward: 'General Ward', bedNumber: 'Bed-GEN-04', attendingDoctor: 'Dr. Priya Mehta', medicalHistory: 'Post-op observation' },
-    { id: 'SAN-2026-1003', name: 'Gurpreet Singh', age: 58, gender: 'Male', phone: '+91 98765 67890', address: 'Mohali Phase 7, Punjab', bloodGroup: 'B+', status: 'Outpatient', ward: 'OPD Care', bedNumber: 'N/A', attendingDoctor: 'Dr. Vivek Singh', medicalHistory: 'Routine Triage Checkup' }
+    { id: 'PAT202600001', name: 'Rahul Sharma', age: 42, gender: 'Male', phone: '+91 98765 43210', address: 'Sector 32, Chandigarh', bloodGroup: 'O+', status: 'Admitted', ward: 'ICU Tower', bedNumber: 'Bed-ICU-01', attendingDoctor: 'Dr. Rajesh Sharma', medicalHistory: 'Hypertension, Cardiac Observation' },
+    { id: 'PAT202600002', name: 'Pooja Verma', age: 34, gender: 'Female', phone: '+91 98765 54321', address: 'Sector 17, Chandigarh', bloodGroup: 'A+', status: 'Admitted', ward: 'General Ward', bedNumber: 'Bed-GEN-04', attendingDoctor: 'Dr. Priya Mehta', medicalHistory: 'Post-op observation' }
   ];
 };
 
@@ -40,7 +79,7 @@ export const createPatientAPI = async (patientData) => {
     const res = await api.post('/patients', patientData);
     return res.data;
   } catch (e) {
-    return { success: true, data: { id: `SAN-2026-${Math.floor(1000 + Math.random() * 9000)}`, ...patientData } };
+    return { success: true, data: { id: `PAT2026${Math.floor(10000 + Math.random() * 90000)}`, ...patientData } };
   }
 };
 
@@ -62,10 +101,7 @@ export const fetchStaffMembers = async () => {
   }
   return [
     { id: 'STF-101', name: 'Dr. Rajesh Sharma', role: 'Doctor', department: 'Cardiology', phone: '+91 172 456 7801', email: 'dr.sharma@sanjeevanihospital.in', status: 'Active' },
-    { id: 'STF-102', name: 'Vikramjit Singh', role: 'Admin', department: 'Executive Management', phone: '+91 172 456 7800', email: 'admin@sanjeevanihospital.in', status: 'Active' },
-    { id: 'STF-103', name: 'Sunita Devi', role: 'Receptionist', department: 'Patient Intake', phone: '+91 172 456 7890', email: 'reception@sanjeevanihospital.in', status: 'Active' },
-    { id: 'STF-104', name: 'Harpreet Kaur', role: 'Emergency Coordinator', department: 'Trauma & Resuscitation', phone: '+91 172 456 7810', email: 'emergency@sanjeevanihospital.in', status: 'Active' },
-    { id: 'STF-105', name: 'Dr. Rekha Gupta', role: 'Blood Bank Officer', department: 'Transfusion Medicine', phone: '+91 172 456 7820', email: 'bloodbank@sanjeevanihospital.in', status: 'Active' }
+    { id: 'STF-102', name: 'Vikramjit Singh', role: 'Admin', department: 'Executive Management', phone: '+91 172 456 7800', email: 'admin@sanjeevanihospital.in', status: 'Active' }
   ];
 };
 

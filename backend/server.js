@@ -30,6 +30,7 @@ connectDB().then(() => {
 // API Routes Injection
 const authRoutes = require('./routes/authRoutes');
 const createEmergencyRoutes = require('./routes/emergencyRoutes');
+const createAppointmentRoutes = require('./routes/appointmentRoutes');
 const doctorRoutes = require('./routes/doctorRoutes');
 const departmentRoutes = require('./routes/departmentRoutes');
 const ambulanceRoutes = require('./routes/ambulanceRoutes');
@@ -40,11 +41,13 @@ const staffRoutes = require('./routes/staffRoutes');
 
 app.use('/api', authRoutes);
 app.use('/api/emergency', createEmergencyRoutes(io));
+app.use('/api/appointment', createAppointmentRoutes(io));
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/ambulances', ambulanceRoutes);
 app.use('/api/beds', bedRoutes);
 app.use('/api/blood', bloodRoutes);
+app.use('/api/patient', patientRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/staff', staffRoutes);
 
@@ -62,12 +65,12 @@ app.get('/', (req, res) => {
       "GET /api/beds",
       "GET /api/blood",
       "GET /api/emergency",
-      "GET /api/patients",
-      "GET /api/staff",
       "POST /api/emergency",
-      "PUT /api/emergency/approve",
-      "PUT /api/emergency/assignDoctor",
-      "PUT /api/emergency/dispatchAmbulance"
+      "POST /api/patient/register",
+      "POST /api/appointment",
+      "GET /api/appointment",
+      "PUT /api/appointment/approve",
+      "PUT /api/appointment/assignDoctor"
     ]
   });
 });

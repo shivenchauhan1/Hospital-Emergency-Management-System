@@ -3,7 +3,7 @@ import {
   HeartPulse, Siren, Stethoscope, Droplet, Clock, FileText, Search, 
   Upload, QrCode, Bell, Download, CheckCircle2, Lock, ShieldCheck, 
   MapPin, Phone, Mail, Globe, ArrowRight, Activity, Users, Bed, Truck, 
-  AlertCircle, Check, Award, ChevronRight 
+  AlertCircle, Check, Award, ChevronRight, Calendar, UserCheck, Plus, X 
 } from 'lucide-react';
 import { 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, 
@@ -12,7 +12,8 @@ import {
 import { HOSPITAL_INFO, INITIAL_DOCTORS, INITIAL_EMERGENCY_CASES } from './data/hospitalStore';
 import { 
   fetchDoctors, fetchAmbulances, fetchBeds, fetchBloodStock, 
-  fetchEmergencies, postEmergency 
+  fetchEmergencies, postEmergency, registerNormalPatientAPI, 
+  bookAppointmentAPI, fetchAppointmentsAPI 
 } from './services/api';
 import socket from './services/socket';
 
@@ -23,61 +24,12 @@ export default function App() {
   const [beds, setBeds] = useState([]);
   const [bloodStock, setBloodStock] = useState([]);
   const [emergencyRequests, setEmergencyRequests] = useState(INITIAL_EMERGENCY_CASES);
+  const [myAppointments, setMyAppointments] = useState([]);
 
   const [showQR, setShowQR] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [createdNotice, setCreatedNotice] = useState(null);
 
-  // Initial Data Fetch & Socket.IO Listener Registration
-  useEffect(() => {
-    const loadInitialData = async () => {
-      const [docsData, ambData, bedData, bloodData, erData] = await Promise.all([
-        fetchDoctors(),
-        fetchAmbulances(),
-        fetchBeds(),
-        fetchBloodStock(),
-        fetchEmergencies()
-      ]);
-      setDoctors(docsData);
-      setAmbulances(ambData);
-      setBeds(bedData);
-      setBloodStock(bloodData);
-      setEmergencyRequests(erData);
-    };
-
-    loadInitialData();
-
-    // Socket.IO Listeners
-    socket.on('new_emergency_request', (newCase) => {
-      setEmergencyRequests(prev => [newCase, ...prev]);
-    });
-
-    socket.on('case_updated', (updatedCase) => {
-      setEmergencyRequests(prev => prev.map(c => c.id === updatedCase.id ? updatedCase : c));
-    });
-
-    socket.on('doctor_assigned', (updatedCase) => {
-      setEmergencyRequests(prev => prev.map(c => c.id === updatedCase.id ? updatedCase : c));
-    });
-
-    socket.on('ambulance_dispatched', (updatedCase) => {
-      setEmergencyRequests(prev => prev.map(c => c.id === updatedCase.id ? updatedCase : c));
-    });
-
-    socket.on('bed_allocated', (updatedCase) => {
-      setEmergencyRequests(prev => prev.map(c => c.id === updatedCase.id ? updatedCase : c));
-    });
-
-    return () => {
-      socket.off('new_emergency_request');
-      socket.off('case_updated');
-      socket.off('doctor_assigned');
-      socket.off('ambulance_dispatched');
-      socket.off('bed_allocated');
-    };
-  }, []);
-
-  // Form State
+  // Emergency Form State
   const [emergencyForm, setEmergencyForm] = useState({
     patientName: 'Rahul Sharma',
     age: '42',
@@ -89,19 +41,78 @@ export default function App() {
     priority: 'Critical'
   });
 
-  const heroChartData = [
-    { time: '08:00', cases: 12, beds: 88 },
-    { time: '10:00', cases: 24, beds: 76 },
-    { time: '12:00', cases: 34, beds: 68 },
-    { time: '14:00', cases: 29, beds: 72 },
-    { time: '16:00', cases: 38, beds: 64 }
-  ];
+  // Normal Registration & Appointment Form State
+  const [normalForm, setNormalForm] = useState({
+    name: 'Pooja Verma',
+    age: '34',
+    gender: 'Female',
+    phone: '+91 98765 54321',
+    email: 'pooja.verma@example.com',
+    address: 'Sector 17, Chandigarh',
+    city: 'Chandigarh',
+    state: 'Punjab',
+    bloodGroup: 'A+',
+    aadharNumber: '9988 7766 5544',
+    department: 'General Medicine',
+    doctorPreference: 'Dr. Rajesh Sharma',
+    appointmentDate: new Date().toISOString().split('T')[0],
+    timeSlot: '10:00 AM - 10:30 AM',
+    symptoms: 'Fever and seasonal cold for 2 days',
+    medicalHistory: 'None',
+    insuranceProvider: 'Star Health Insurance'
+  });
+
+  // Load Initial Data & Register Socket Hooks
+  useEffect(() => {
+    const loadInitialData = async () => {
+      const [docsData, ambData, bedData, bloodData, erData, apptData] = await Promise.all([
+        fetchDoctors(),
+        fetchAmbulances(),
+        fetchBeds(),
+        fetchBloodStock(),
+        fetchEmergencies(),
+        fetchAppointmentsAPI()
+      ]);
+      setDoctors(docsData);
+      setAmbulances(ambData);
+      setBeds(bedData);
+      setBloodStock(bloodData);
+      setEmergencyRequests(erData);
+      setMyAppointments(apptData);
+    };
+
+    loadInitialData();
+
+    // Socket.IO Events
+    socket.on('new_emergency_request', (newCase) => {
+      setEmergencyRequests(prev => [newCase, ...prev]);
+    });
+
+    socket.on('case_updated', (updatedCase) => {
+      setEmergencyRequests(prev => prev.map(c => c.id === updatedCase.id ? updatedCase : c));
+    });
+
+    socket.on('appointment_approved', (updatedAppt) => {
+      setMyAppointments(prev => prev.map(a => a.id === updatedAppt.id ? updatedAppt : a));
+    });
+
+    socket.on('appointment_completed', (updatedAppt) => {
+      setMyAppointments(prev => prev.map(a => a.id === updatedAppt.id ? updatedAppt : a));
+    });
+
+    return () => {
+      socket.off('new_emergency_request');
+      socket.off('case_updated');
+      socket.off('appointment_approved');
+      socket.off('appointment_completed');
+    };
+  }, []);
 
   const handleEmergencySubmit = async (e) => {
     e.preventDefault();
     const result = await postEmergency(emergencyForm);
     const newCase = result.data || {
-      id: `ER-2026-00${emergencyRequests.length + 1}`,
+      id: `ER2026${Math.floor(1000 + Math.random() * 9000)}`,
       ...emergencyForm,
       status: 'Pending',
       createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -114,10 +125,39 @@ export default function App() {
     });
   };
 
+  const handleNormalSubmit = async (e) => {
+    e.preventDefault();
+    const patRes = await registerNormalPatientAPI(normalForm);
+    const apptRes = await bookAppointmentAPI({
+      patientName: normalForm.name,
+      doctorName: normalForm.doctorPreference,
+      department: normalForm.department,
+      date: normalForm.appointmentDate,
+      timeSlot: normalForm.timeSlot
+    });
+
+    const patientId = patRes.patientId || `PAT2026${Math.floor(10000 + Math.random() * 90000)}`;
+    const newAppt = apptRes.data || {
+      id: `APT2026${Math.floor(10000 + Math.random() * 90000)}`,
+      patientName: normalForm.name,
+      doctorName: normalForm.doctorPreference,
+      department: normalForm.department,
+      date: normalForm.appointmentDate,
+      timeSlot: normalForm.timeSlot,
+      status: 'Appointment Requested'
+    };
+
+    setMyAppointments([newAppt, ...myAppointments]);
+    setCreatedNotice({
+      id: `${patientId} / ${newAppt.id}`,
+      message: "Normal OPD Patient & Appointment registered successfully!"
+    });
+    setActiveTab('appointments');
+  };
+
   return (
     <div className="w-full min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col font-sans relative overflow-x-hidden selection:bg-[#0F766E] selection:text-white">
       
-      {/* BACKGROUND BLOBS */}
       <div className="fixed inset-0 bg-grid-pattern opacity-60 pointer-events-none z-0" />
       <div className="fixed -top-24 -left-24 w-96 h-96 rounded-full bg-[#14B8A6]/15 blur-3xl animate-blob-1 pointer-events-none z-0" />
       <div className="fixed top-1/3 -right-24 w-96 h-96 rounded-full bg-[#0F766E]/15 blur-3xl animate-blob-2 pointer-events-none z-0" />
@@ -166,11 +206,11 @@ export default function App() {
             <div className="hidden lg:flex items-center gap-1 xl:gap-2">
               {[
                 { id: 'home', label: 'Home' },
+                { id: 'normal-register', label: 'Consultation' },
                 { id: 'emergency-register', label: 'Emergency' },
+                { id: 'appointments', label: 'My Appointments' },
                 { id: 'doctors', label: 'Doctors' },
-                { id: 'bloodbank', label: 'Blood Bank' },
-                { id: 'ambulance', label: 'Ambulance' },
-                { id: 'beds', label: 'ICU Beds' }
+                { id: 'bloodbank', label: 'Blood Bank' }
               ].map((item) => (
                 <button
                   key={item.id}
@@ -186,88 +226,84 @@ export default function App() {
               ))}
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setActiveTab('normal-register')}
+                className="px-3.5 py-2 rounded-xl text-xs font-black text-white bg-[#0F766E] hover:bg-teal-800 shadow-sm transition-all"
+              >
+                🩺 Book Appointment
+              </button>
               <button
                 onClick={() => setActiveTab('emergency-register')}
-                className="px-4 py-2.5 rounded-xl text-xs font-black text-white bg-[#DC2626] hover:bg-red-700 shadow-md shadow-red-600/25 transition-all flex items-center gap-2 active:scale-95"
+                className="px-3.5 py-2 rounded-xl text-xs font-black text-white bg-[#DC2626] hover:bg-red-700 shadow-sm transition-all"
               >
-                <Siren className="w-4 h-4 animate-bounce" />
-                <span>Register Emergency</span>
+                🚑 Register Emergency
               </button>
             </div>
           </div>
         </nav>
 
         {/* MAIN BODY CONTENT */}
-        <main className="flex-1 w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16">
+        <main className="flex-1 w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
           
-          {/* HOME VIEW */}
+          {/* HOME PAGE VIEW */}
           {activeTab === 'home' && (
-            <div className="w-full space-y-16">
+            <div className="w-full space-y-12">
               
-              {/* HERO SECTION */}
-              <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center pt-4">
-                <div className="lg:col-span-6 space-y-6">
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-black bg-teal-50 border border-teal-200 text-[#0F766E]">
-                    <Activity className="w-4 h-4 text-[#14B8A6] animate-pulse" />
-                    <span>Real-Time Emergency Coordination Engine</span>
+              {/* DUAL REGISTRATION CARDS */}
+              <div className="text-center space-y-2 max-w-2xl mx-auto pt-4">
+                <span className="text-xs font-black uppercase text-[#0F766E] tracking-wider">Patient Portal Navigation</span>
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900">Choose Your Healthcare Registration Mode</h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                {/* Emergency Registration Card */}
+                <div 
+                  onClick={() => setActiveTab('emergency-register')}
+                  className="p-8 rounded-3xl bg-gradient-to-br from-red-50 to-white border-2 border-red-200 shadow-xl hover:border-red-500 hover:shadow-2xl transition-all cursor-pointer space-y-4 group relative overflow-hidden"
+                >
+                  <div className="w-14 h-14 rounded-2xl bg-red-600 text-white flex items-center justify-center text-2xl shadow-lg shadow-red-600/30 group-hover:scale-110 transition-transform">
+                    🚑
                   </div>
-
-                  <h1 className="text-3xl sm:text-5xl font-black text-slate-900 leading-tight">
-                    Hospital Emergency Management System
-                  </h1>
-
-                  <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-xl font-medium">
-                    Real-Time Emergency Coordination for Faster, Smarter and Safer Patient Care across Sector 32 Chandigarh.
+                  <div className="space-y-1">
+                    <span className="text-xs font-black text-red-600 uppercase tracking-wider">Immediate Triage Action</span>
+                    <h3 className="text-2xl font-black text-slate-900">Emergency Case Registration</h3>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                    Critical vehicle accident, acute cardiac arrest, stroke, severe trauma, or 108 emergency ambulance dispatch. Generates <strong className="text-red-600 font-mono">ER202600001</strong> case token.
                   </p>
-
-                  <div className="flex items-center gap-3 pt-2 flex-wrap">
-                    <button
-                      onClick={() => setActiveTab('emergency-register')}
-                      className="px-6 py-3.5 rounded-2xl text-xs font-black text-white bg-[#DC2626] hover:bg-red-700 shadow-lg shadow-red-600/30 transition-all flex items-center gap-2"
-                    >
-                      <Siren className="w-4 h-4" />
-                      <span>Register Emergency</span>
-                    </button>
+                  <div className="pt-2 flex items-center gap-2 text-xs font-black text-red-600 group-hover:translate-x-1 transition-transform">
+                    <span>Proceed to Emergency Triage Form</span>
+                    <ArrowRight className="w-4 h-4" />
                   </div>
                 </div>
 
-                {/* Dashboard Preview Card */}
-                <div className="lg:col-span-6">
-                  <div className="glass-card p-6 rounded-3xl shadow-2xl border border-slate-200/80 space-y-6">
-                    <div className="flex items-center justify-between border-b pb-4">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-3 h-3 rounded-full bg-red-500 animate-ping" />
-                        <h3 className="text-sm font-black text-slate-900 uppercase">Live Command Center Feed</h3>
-                      </div>
-                      <span className="text-[11px] font-mono font-bold text-[#0F766E] bg-teal-50 px-2.5 py-1 rounded-full border border-teal-200">
-                        Socket.IO Connected
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      <div className="p-3.5 rounded-2xl bg-red-50/80 border border-red-200/60 text-red-900">
-                        <span className="text-[10px] font-bold uppercase block text-red-700">Emergency Cases</span>
-                        <div className="text-xl font-black text-red-700">{emergencyRequests.length}</div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl bg-teal-50/80 border border-teal-200/60 text-teal-900">
-                        <span className="text-[10px] font-bold uppercase block text-teal-700">Doctors Ready</span>
-                        <div className="text-xl font-black text-[#0F766E]">{doctors.length}</div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl bg-purple-50/80 border border-purple-200/60 text-purple-900">
-                        <span className="text-[10px] font-bold uppercase block text-purple-700">ICU Beds</span>
-                        <div className="text-xl font-black text-purple-800">22 / 50</div>
-                      </div>
-                    </div>
+                {/* Normal Patient Consultation Card */}
+                <div 
+                  onClick={() => setActiveTab('normal-register')}
+                  className="p-8 rounded-3xl bg-gradient-to-br from-teal-50 to-white border-2 border-teal-200 shadow-xl hover:border-[#0F766E] hover:shadow-2xl transition-all cursor-pointer space-y-4 group relative overflow-hidden"
+                >
+                  <div className="w-14 h-14 rounded-2xl bg-[#0F766E] text-white flex items-center justify-center text-2xl shadow-lg shadow-teal-700/30 group-hover:scale-110 transition-transform">
+                    🩺
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs font-black text-[#0F766E] uppercase tracking-wider">Outpatient OPD Services</span>
+                    <h3 className="text-2xl font-black text-slate-900">Normal Consultation & OPD Appointment</h3>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                    General consultation, fever, seasonal cold, diabetes checkup, routine health checkup, pregnancy care, or follow-up visits. Generates Patient ID <strong className="text-[#0F766E] font-mono">PAT202600001</strong> and Appointment ID <strong className="text-[#0F766E] font-mono">APT202600001</strong>.
+                  </p>
+                  <div className="pt-2 flex items-center gap-2 text-xs font-black text-[#0F766E] group-hover:translate-x-1 transition-transform">
+                    <span>Proceed to OPD Booking Form</span>
+                    <ArrowRight className="w-4 h-4" />
                   </div>
                 </div>
               </div>
 
               {/* LIVE EMERGENCY TRACKER QUEUE */}
               <div className="w-full bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-                <h2 className="text-xl font-black text-slate-900">Live Emergency Status Tracker (Real-Time Socket Sync)</h2>
+                <h3 className="text-base font-black text-slate-900">Live Emergency Status Tracker (Real-Time Socket Sync)</h3>
                 <div className="overflow-x-auto w-full">
                   <table className="w-full text-left text-xs border-collapse font-sans min-w-[700px]">
                     <thead>
@@ -297,55 +333,191 @@ export default function App() {
                   </table>
                 </div>
               </div>
+            </div>
+          )}
 
-              {/* DOCTORS CARDS SECTION */}
-              <div className="w-full space-y-6">
-                <h2 className="text-2xl font-black text-slate-900">Available Consultant Doctors</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {doctors.map((doc) => (
-                    <div key={doc.id || doc.name} className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-sm space-y-3">
-                      <div className="w-12 h-12 rounded-2xl bg-teal-50 text-[#0F766E] flex items-center justify-center font-bold text-xl">
-                        👨‍⚕️
-                      </div>
-                      <h3 className="text-base font-black text-slate-900">{doc.name}</h3>
-                      <div className="text-xs font-extrabold text-[#0F766E]">{doc.department}</div>
-                      <p className="text-xs text-slate-500 font-medium">{doc.specialization}</p>
-                      <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">{doc.availability}</span>
-                    </div>
-                  ))}
+          {/* NORMAL PATIENT REGISTRATION FORM TAB */}
+          {activeTab === 'normal-register' && (
+            <div className="w-full bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-lg space-y-6 max-w-4xl mx-auto">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black bg-teal-100 text-[#0F766E] mb-2">
+                  <Stethoscope className="w-4 h-4 text-[#0F766E]" />
+                  <span>Outpatient OPD Registration & Doctor Booking</span>
                 </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900">NORMAL PATIENT CONSULTATION FORM</h2>
               </div>
+
+              <form onSubmit={handleNormalSubmit} className="space-y-6">
+                
+                {/* Personal Information */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-black uppercase text-[#0F766E] border-b pb-1">1. Patient Personal Details</h4>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">Full Patient Name *</label>
+                      <input type="text" required value={normalForm.name} onChange={(e) => setNormalForm({ ...normalForm, name: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#0F766E]" />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">Age *</label>
+                      <input type="number" required value={normalForm.age} onChange={(e) => setNormalForm({ ...normalForm, age: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#0F766E]" />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">Gender *</label>
+                      <select value={normalForm.gender} onChange={(e) => setNormalForm({ ...normalForm, gender: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#0F766E]">
+                        <option>Male</option>
+                        <option>Female</option>
+                        <option>Other</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">Phone Number *</label>
+                      <input type="text" required value={normalForm.phone} onChange={(e) => setNormalForm({ ...normalForm, phone: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#0F766E]" />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">Email Address</label>
+                      <input type="email" value={normalForm.email} onChange={(e) => setNormalForm({ ...normalForm, email: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#0F766E]" />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">Blood Group</label>
+                      <select value={normalForm.bloodGroup} onChange={(e) => setNormalForm({ ...normalForm, bloodGroup: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0F766E]">
+                        <option>A+</option>
+                        <option>A-</option>
+                        <option>B+</option>
+                        <option>B-</option>
+                        <option>AB+</option>
+                        <option>AB-</option>
+                        <option>O+</option>
+                        <option>O-</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Consultation & Appointment Details */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-black uppercase text-[#0F766E] border-b pb-1">2. Department & Consultation Booking</h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">Department *</label>
+                      <select value={normalForm.department} onChange={(e) => setNormalForm({ ...normalForm, department: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0F766E]">
+                        {[
+                          'General Medicine', 'Cardiology', 'Neurology', 'Orthopedics', 
+                          'Dermatology', 'ENT', 'Dental', 'Ophthalmology', 'Pediatrics', 
+                          'Gynecology', 'Psychiatry', 'Pulmonology', 'Radiology', 'Oncology'
+                        ].map((dept, i) => (
+                          <option key={i}>{dept}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">Doctor Preference</label>
+                      <select value={normalForm.doctorPreference} onChange={(e) => setNormalForm({ ...normalForm, doctorPreference: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0F766E]">
+                        <option>Dr. Rajesh Sharma (Cardiology HOD)</option>
+                        <option>Dr. Priya Mehta (Neurology)</option>
+                        <option>Dr. Vivek Singh (Emergency Medicine)</option>
+                        <option>Dr. Kavita Kapoor (Pediatrics)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">Appointment Date *</label>
+                      <input type="date" required value={normalForm.appointmentDate} onChange={(e) => setNormalForm({ ...normalForm, appointmentDate: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#0F766E]" />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">Preferred Time Slot *</label>
+                      <select value={normalForm.timeSlot} onChange={(e) => setNormalForm({ ...normalForm, timeSlot: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#0F766E]">
+                        <option>10:00 AM - 10:30 AM</option>
+                        <option>11:00 AM - 11:30 AM</option>
+                        <option>02:00 PM - 02:30 PM</option>
+                        <option>04:00 PM - 04:30 PM</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Current Symptoms & Health Concern</label>
+                    <textarea rows="2" value={normalForm.symptoms} onChange={(e) => setNormalForm({ ...normalForm, symptoms: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 focus:outline-none focus:border-[#0F766E]"></textarea>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-4 rounded-2xl font-black text-xs text-white bg-[#0F766E] hover:bg-teal-800 shadow-xl shadow-teal-700/25 transition-all flex items-center justify-center gap-2"
+                >
+                  <Stethoscope className="w-4 h-4" />
+                  <span>Submit OPD Registration & Book Appointment</span>
+                </button>
+              </form>
             </div>
           )}
 
           {/* EMERGENCY REGISTRATION TAB */}
           {activeTab === 'emergency-register' && (
-            <div className="w-full bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-md space-y-6">
+            <div className="w-full bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-md space-y-6 max-w-4xl mx-auto">
               <h2 className="text-2xl font-black text-slate-900">EMERGENCY CASE REGISTRATION FORM</h2>
-              
-              {createdNotice && (
-                <div className="p-4 rounded-2xl bg-teal-50 border border-teal-200 text-teal-900 text-xs font-bold">
-                  {createdNotice.message} (ID: <span className="font-mono text-red-600">{createdNotice.id}</span>)
-                </div>
-              )}
-
               <form onSubmit={handleEmergencySubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <input type="text" required placeholder="Patient Name" value={emergencyForm.patientName} onChange={(e) => setEmergencyForm({ ...emergencyForm, patientName: e.target.value })} className="w-full bg-slate-50 border p-3 rounded-xl text-xs" />
                   <input type="text" required placeholder="Phone" value={emergencyForm.phone} onChange={(e) => setEmergencyForm({ ...emergencyForm, phone: e.target.value })} className="w-full bg-slate-50 border p-3 rounded-xl text-xs" />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <select value={emergencyForm.emergencyType} onChange={(e) => setEmergencyForm({ ...emergencyForm, emergencyType: e.target.value })} className="w-full bg-slate-50 border p-3 rounded-xl text-xs font-bold">
-                    <option>Accident</option>
-                    <option>Heart Attack</option>
-                    <option>Stroke</option>
-                    <option>Burn</option>
-                    <option>Fracture</option>
-                  </select>
-                  <input type="text" required placeholder="Address" value={emergencyForm.address} onChange={(e) => setEmergencyForm({ ...emergencyForm, address: e.target.value })} className="w-full bg-slate-50 border p-3 rounded-xl text-xs" />
-                </div>
                 <button type="submit" className="w-full py-4 text-xs font-black text-white bg-[#DC2626] rounded-2xl shadow-lg">Submit Emergency Case Registration</button>
               </form>
+            </div>
+          )}
+
+          {/* MY APPOINTMENTS TAB */}
+          {activeTab === 'appointments' && (
+            <div className="w-full bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
+              <div className="flex justify-between items-center flex-wrap gap-4">
+                <h2 className="text-2xl font-black text-slate-900">My Registered OPD Appointments</h2>
+                <button onClick={() => setActiveTab('normal-register')} className="px-4 py-2 bg-[#0F766E] text-white text-xs font-black rounded-xl flex items-center gap-2">
+                  <Plus className="w-4 h-4" /> Book New Appointment
+                </button>
+              </div>
+
+              <div className="overflow-x-auto w-full">
+                <table className="w-full text-left text-xs border-collapse font-sans min-w-[750px]">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-extrabold uppercase">
+                      <th className="p-3">Appointment ID</th>
+                      <th className="p-3">Patient Name</th>
+                      <th className="p-3">Doctor</th>
+                      <th className="p-3">Department</th>
+                      <th className="p-3">Date / Time Slot</th>
+                      <th className="p-3">Status</th>
+                      <th className="p-3 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {myAppointments.map((appt) => (
+                      <tr key={appt.id}>
+                        <td className="p-3 font-mono font-bold text-[#0F766E]">{appt.id}</td>
+                        <td className="p-3 font-extrabold text-slate-900">{appt.patientName}</td>
+                        <td className="p-3 font-semibold text-[#0F766E]">{appt.doctorName}</td>
+                        <td className="p-3 font-medium">{appt.department}</td>
+                        <td className="p-3 font-mono">{appt.date} ({appt.timeSlot})</td>
+                        <td className="p-3"><span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-teal-100 text-teal-800">{appt.status}</span></td>
+                        <td className="p-3 text-center">
+                          <button className="px-3 py-1 bg-slate-900 text-white rounded-lg font-bold text-[10px]">Download Slip</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
@@ -375,39 +547,6 @@ export default function App() {
                     <div className="text-2xl font-black text-red-600">{b.group}</div>
                     <div className="text-xs font-mono font-bold">{b.units} Units</div>
                     <span className="px-2 py-0.5 text-[9px] font-bold bg-teal-100 text-teal-800 rounded">{b.status}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* AMBULANCE TAB */}
-          {activeTab === 'ambulance' && (
-            <div className="w-full space-y-6">
-              <h2 className="text-2xl font-black text-slate-900">108 Fleet Availability</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {ambulances.map((amb, idx) => (
-                  <div key={idx} className="p-6 bg-white border rounded-3xl space-y-2 text-xs">
-                    <div className="font-mono font-black text-slate-900 text-base">{amb.number}</div>
-                    <div>Driver: {amb.driver}</div>
-                    <div>Status: <span className="font-bold text-teal-700">{amb.status}</span></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ICU BEDS TAB */}
-          {activeTab === 'beds' && (
-            <div className="w-full space-y-6">
-              <h2 className="text-2xl font-black text-slate-900">Live ICU & Ward Bed Availability Matrix</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-                {beds.map((b) => (
-                  <div key={b.id} className={`p-3 rounded-2xl border text-center text-xs font-mono ${
-                    b.status === 'Occupied' ? 'bg-red-50 border-red-200 text-red-900' : 'bg-emerald-50 border-emerald-200 text-emerald-900'
-                  }`}>
-                    <div className="font-extrabold">{b.bedNumber}</div>
-                    <div>{b.status}</div>
                   </div>
                 ))}
               </div>
