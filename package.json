@@ -2,26 +2,8 @@
   "name": "hospital-emergency-management-system",
   "private": true,
   "version": "1.0.0",
-  "type": "module",
   "scripts": {
-    "dev": "cd patient-portal && npm run dev",
-    "build": "cd patient-portal && npm install && npm run build && cp -r dist ../dist || xcopy /E /I /Y dist ..\\dist"
-  },
-  "dependencies": {
-    "axios": "^1.6.8",
-    "lucide-react": "^0.344.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-icons": "^5.0.1",
-    "react-router-dom": "^6.22.3",
-    "recharts": "^2.12.2",
-    "socket.io-client": "^4.7.5"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.2.1",
-    "autoprefixer": "^10.4.18",
-    "postcss": "^8.4.35",
-    "tailwindcss": "^3.4.1",
-    "vite": "^5.1.4"
+    "dev": "echo Root workspace",
+    "build": "echo Root workspace"
   }
 }

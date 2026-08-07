@@ -1,8 +1,0 @@
-{
-  "buildCommand": "cd patient-portal && npm install && npm run build",
-  "outputDirectory": "patient-portal/dist",
-  "framework": "vite",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
