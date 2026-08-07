@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
@@ -11,7 +12,8 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE"]
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
   }
 });
 
@@ -19,7 +21,7 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
-// Initialize MongoDB Connection (Optional local/Atlas fallback)
+// Initialize Database Connection
 connectDB();
 
 // API Routes Injection
@@ -54,6 +56,23 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log(`🔌 Client Disconnected (Socket ID: ${socket.id})`);
+  });
+});
+
+// 404 Handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "API endpoint not found"
+  });
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("❌ Internal Error:", err);
+  res.status(500).json({
+    success: false,
+    message: "Internal Server Error"
   });
 });
 
