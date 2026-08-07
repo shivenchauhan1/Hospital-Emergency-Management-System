@@ -6,7 +6,7 @@ import HospitalSortingReports from '../components/hospital/HospitalSortingReport
 import HospitalCppCodeViewer from '../components/hospital/HospitalCppCodeViewer';
 import HospitalTestRunner from '../components/hospital/HospitalTestRunner';
 import HospitalPRDViewer from '../components/hospital/HospitalPRDViewer';
-import StateTraceTable from '../components/cart/StateTraceTable';
+import HospitalStateTraceTable from '../components/hospital/HospitalStateTraceTable';
 import { HeartPulse, Terminal, Activity, BarChart2, Code, ShieldCheck, FileText, Sparkles, RefreshCw } from 'lucide-react';
 
 export default function HospitalPage() {
@@ -120,7 +120,7 @@ export default function HospitalPage() {
         <div className="space-y-8">
           <HospitalInteractiveConsole engine={engine} onStateChange={handleStateChange} />
           <HospitalDSAVisualizer engine={engine} />
-          <StateTraceTable historyTrace={engine.historyTrace} />
+          <HospitalStateTraceTable historyTrace={engine.historyTrace} />
         </div>
       )}
 
@@ -128,7 +128,7 @@ export default function HospitalPage() {
       {activeTab === 'visualizer' && (
         <div className="space-y-8">
           <HospitalDSAVisualizer engine={engine} />
-          <StateTraceTable historyTrace={engine.historyTrace} />
+          <HospitalStateTraceTable historyTrace={engine.historyTrace} />
         </div>
       )}
 
