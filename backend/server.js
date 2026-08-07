@@ -4,6 +4,7 @@ const http = require('http');
 const cors = require('cors');
 const { Server } = require('socket.io');
 const connectDB = require('./config/db');
+const seedHospitalData = require('./config/seed');
 
 const app = express();
 const server = http.createServer(app);
@@ -21,15 +22,27 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
-// Initialize Database Connection
-connectDB();
+// Initialize Database Connection & Seed Data
+connectDB().then(() => {
+  seedHospitalData();
+});
 
 // API Routes Injection
 const authRoutes = require('./routes/authRoutes');
 const createEmergencyRoutes = require('./routes/emergencyRoutes');
+const doctorRoutes = require('./routes/doctorRoutes');
+const departmentRoutes = require('./routes/departmentRoutes');
+const ambulanceRoutes = require('./routes/ambulanceRoutes');
+const bedRoutes = require('./routes/bedRoutes');
+const bloodRoutes = require('./routes/bloodRoutes');
 
 app.use('/api', authRoutes);
 app.use('/api/emergency', createEmergencyRoutes(io));
+app.use('/api/doctors', doctorRoutes);
+app.use('/api/departments', departmentRoutes);
+app.use('/api/ambulances', ambulanceRoutes);
+app.use('/api/beds', bedRoutes);
+app.use('/api/blood', bloodRoutes);
 
 // Helper Root Status Endpoint
 app.get('/', (req, res) => {
@@ -39,13 +52,20 @@ app.get('/', (req, res) => {
     location: "Sector 32, Chandigarh",
     socketEngine: "Socket.IO Real-Time Enabled",
     endpoints: [
-      "POST /api/register",
-      "POST /api/login",
-      "POST /api/emergency",
+      "GET /api/doctors",
+      "GET /api/departments",
+      "GET /api/ambulances",
+      "GET /api/beds",
+      "GET /api/blood",
       "GET /api/emergency",
-      "PUT /api/emergency/:id",
+      "POST /api/emergency",
+      "PUT /api/emergency/approve",
+      "PUT /api/emergency/reject",
       "PUT /api/emergency/assignDoctor",
-      "PUT /api/emergency/dispatchAmbulance"
+      "PUT /api/emergency/dispatchAmbulance",
+      "PUT /api/emergency/allocateBed",
+      "PUT /api/emergency/requestBlood",
+      "PUT /api/emergency/complete"
     ]
   });
 });

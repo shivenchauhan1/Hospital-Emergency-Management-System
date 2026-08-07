@@ -1,135 +1,195 @@
-let emergencyStore = [
-  {
-    id: "ER20260012",
-    patient: "Rahul Sharma",
-    phone: "9876543210",
-    emergencyType: "Accident",
-    priority: "Critical",
-    status: "Pending",
-    doctor: null,
-    ambulance: null,
-    address: "Sector 32, Chandigarh",
-    description: "Collision trauma near Tribune Chowk",
-    createdAt: "2026-08-07T10:25:00.000Z"
-  },
-  {
-    id: "ER20260015",
-    patient: "Neha Kapoor",
-    phone: "9888877766",
-    emergencyType: "Stroke",
-    priority: "Critical",
-    status: "Approved",
-    doctor: "Dr. Priya Mehta",
-    ambulance: "CH02CD5678",
-    address: "Kothi 89, Sector 9, Panchkula",
-    description: "Sudden facial asymmetry and slurred speech",
-    createdAt: "2026-08-07T10:15:00.000Z"
-  }
-];
+const EmergencyCase = require('../models/EmergencyCase');
 
-// Patient Submits Emergency (POST /api/emergency)
-const createEmergencyRequest = (req, res, io) => {
-  const { patientName, phone, emergencyType, priority, address, description } = req.body;
-  const requestId = `ER202600${10 + emergencyStore.length + 1}`;
+module.exports = (io) => {
+  return {
+    // GET /api/emergency
+    getEmergencies: async (req, res) => {
+      try {
+        const cases = await EmergencyCase.find().sort({ createdAt: -1 });
+        res.json({ success: true, count: cases.length, data: cases });
+      } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+      }
+    },
 
-  const newDoc = {
-    id: requestId,
-    patient: patientName || "Rahul Sharma",
-    phone: phone || "9876543210",
-    emergencyType: emergencyType || "Accident",
-    priority: priority || "Critical",
-    status: "Pending",
-    doctor: null,
-    ambulance: null,
-    address: address || "Sector 32, Chandigarh",
-    description: description || "Acute emergency trauma",
-    createdAt: new Date().toISOString()
+    // POST /api/emergency
+    createEmergency: async (req, res) => {
+      try {
+        const count = await EmergencyCase.countDocuments();
+        const emergencyId = `ER2026${String(count + 1).padStart(4, '0')}`;
+        
+        const newCase = await EmergencyCase.create({
+          id: emergencyId,
+          patientName: req.body.patientName || 'Anonymous Patient',
+          age: req.body.age || '30',
+          gender: req.body.gender || 'Male',
+          phone: req.body.phone || '+91 98765 00000',
+          emergencyType: req.body.emergencyType || 'General Emergency',
+          priority: req.body.priority || 'Critical',
+          status: 'Pending',
+          assignedDoctor: 'Unassigned',
+          ambulanceDispatched: 'None',
+          address: req.body.address || 'Sector 32, Chandigarh',
+          description: req.body.description || ''
+        });
+
+        // Broadcast to all connected Staff Portal instances
+        if (io) {
+          io.emit('new_emergency_request', newCase);
+        }
+
+        res.status(201).json({
+          success: true,
+          message: 'Emergency request submitted and broadcasted via Socket.IO',
+          data: newCase
+        });
+      } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+      }
+    },
+
+    // PUT /api/emergency/approve
+    approveEmergency: async (req, res) => {
+      try {
+        const { id } = req.body;
+        const updatedCase = await EmergencyCase.findOneAndUpdate(
+          { id },
+          { status: 'Approved' },
+          { new: true }
+        );
+
+        if (io) {
+          io.emit('case_updated', updatedCase);
+        }
+
+        res.json({ success: true, message: 'Case Approved', data: updatedCase });
+      } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+      }
+    },
+
+    // PUT /api/emergency/reject
+    rejectEmergency: async (req, res) => {
+      try {
+        const { id } = req.body;
+        const updatedCase = await EmergencyCase.findOneAndUpdate(
+          { id },
+          { status: 'Rejected' },
+          { new: true }
+        );
+
+        if (io) {
+          io.emit('case_updated', updatedCase);
+        }
+
+        res.json({ success: true, message: 'Case Rejected', data: updatedCase });
+      } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+      }
+    },
+
+    // PUT /api/emergency/assignDoctor
+    assignDoctor: async (req, res) => {
+      try {
+        const { id, doctorName } = req.body;
+        const updatedCase = await EmergencyCase.findOneAndUpdate(
+          { id },
+          { assignedDoctor: doctorName || 'Dr. Rajesh Sharma', status: 'Doctor Assigned' },
+          { new: true }
+        );
+
+        if (io) {
+          io.emit('doctor_assigned', updatedCase);
+          io.emit('case_updated', updatedCase);
+        }
+
+        res.json({ success: true, message: 'Doctor Assigned', data: updatedCase });
+      } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+      }
+    },
+
+    // PUT /api/emergency/dispatchAmbulance
+    dispatchAmbulance: async (req, res) => {
+      try {
+        const { id, ambulanceNumber } = req.body;
+        const updatedCase = await EmergencyCase.findOneAndUpdate(
+          { id },
+          { ambulanceDispatched: ambulanceNumber || 'PB01AB1234', status: 'Ambulance Dispatched' },
+          { new: true }
+        );
+
+        if (io) {
+          io.emit('ambulance_dispatched', updatedCase);
+          io.emit('case_updated', updatedCase);
+        }
+
+        res.json({ success: true, message: 'Ambulance Dispatched', data: updatedCase });
+      } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+      }
+    },
+
+    // PUT /api/emergency/allocateBed
+    allocateBed: async (req, res) => {
+      try {
+        const { id, bedNumber } = req.body;
+        const updatedCase = await EmergencyCase.findOneAndUpdate(
+          { id },
+          { bedAllocated: bedNumber || 'Bed-ICU-01', status: 'Treatment Started' },
+          { new: true }
+        );
+
+        if (io) {
+          io.emit('bed_allocated', updatedCase);
+          io.emit('case_updated', updatedCase);
+        }
+
+        res.json({ success: true, message: 'Bed Allocated', data: updatedCase });
+      } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+      }
+    },
+
+    // PUT /api/emergency/requestBlood
+    requestBlood: async (req, res) => {
+      try {
+        const { id, bloodGroup } = req.body;
+        const updatedCase = await EmergencyCase.findOneAndUpdate(
+          { id },
+          { bloodRequested: bloodGroup || 'O+' },
+          { new: true }
+        );
+
+        if (io) {
+          io.emit('blood_request', updatedCase);
+        }
+
+        res.json({ success: true, message: 'Blood Requested', data: updatedCase });
+      } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+      }
+    },
+
+    // PUT /api/emergency/complete
+    completeEmergency: async (req, res) => {
+      try {
+        const { id } = req.body;
+        const updatedCase = await EmergencyCase.findOneAndUpdate(
+          { id },
+          { status: 'Completed' },
+          { new: true }
+        );
+
+        if (io) {
+          io.emit('case_completed', updatedCase);
+          io.emit('case_updated', updatedCase);
+        }
+
+        res.json({ success: true, message: 'Case Completed', data: updatedCase });
+      } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+      }
+    }
   };
-
-  emergencyStore.unshift(newDoc);
-
-  // Socket.IO Emit -> Staff Dashboard updates live
-  if (io) {
-    io.emit('emergency_request_created', newDoc);
-  }
-
-  res.json({
-    success: true,
-    message: "Your request has been sent successfully. Hospital staff will review your request shortly.",
-    requestId,
-    data: newDoc
-  });
-};
-
-// Staff Fetches Emergency Queue (GET /api/emergency)
-const getEmergencyRequests = (req, res) => {
-  res.json(emergencyStore);
-};
-
-// Staff Updates Emergency Status / Approve / Reject (PUT /api/emergency/:id)
-const updateEmergencyStatus = (req, res, io) => {
-  const { id } = req.params;
-  const { status, priority } = req.body;
-  const doc = emergencyStore.find(e => e.id === id);
-
-  if (doc) {
-    if (status) doc.status = status;
-    if (priority) doc.priority = priority;
-
-    // Socket.IO Emit -> Patient Portal updates live
-    if (io) {
-      io.emit('emergency_request_updated', doc);
-    }
-
-    res.json({ success: true, data: doc });
-  } else {
-    res.status(404).json({ error: 'Emergency request not found' });
-  }
-};
-
-// Staff Assigns Doctor (PUT /api/assignDoctor)
-const assignDoctor = (req, res, io) => {
-  const { requestId, doctorName } = req.body;
-  const doc = emergencyStore.find(e => e.id === requestId);
-
-  if (doc) {
-    doc.doctor = doctorName || "Dr. Rajesh Sharma";
-    doc.status = "Doctor Assigned";
-
-    if (io) {
-      io.emit('emergency_request_updated', doc);
-    }
-
-    res.json({ success: true, data: doc });
-  } else {
-    res.status(404).json({ error: 'Emergency request not found' });
-  }
-};
-
-// Staff Dispatches Ambulance (PUT /api/dispatchAmbulance)
-const dispatchAmbulance = (req, res, io) => {
-  const { requestId, ambulanceNumber } = req.body;
-  const doc = emergencyStore.find(e => e.id === requestId);
-
-  if (doc) {
-    doc.ambulance = ambulanceNumber || "PB01AB1234";
-    doc.status = "Ambulance Dispatched";
-
-    if (io) {
-      io.emit('emergency_request_updated', doc);
-    }
-
-    res.json({ success: true, data: doc });
-  } else {
-    res.status(404).json({ error: 'Emergency request not found' });
-  }
-};
-
-module.exports = {
-  createEmergencyRequest,
-  getEmergencyRequests,
-  updateEmergencyStatus,
-  assignDoctor,
-  dispatchAmbulance,
-  emergencyStore
 };

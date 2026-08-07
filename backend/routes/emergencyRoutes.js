@@ -1,31 +1,19 @@
 const express = require('express');
+const emergencyController = require('../controllers/emergencyController');
 
-const createEmergencyRoutes = (io) => {
+module.exports = (io) => {
   const router = express.Router();
-  const { 
-    createEmergencyRequest, 
-    getEmergencyRequests, 
-    updateEmergencyStatus, 
-    assignDoctor, 
-    dispatchAmbulance 
-  } = require('../controllers/emergencyController');
+  const ctrl = emergencyController(io);
 
-  // Patient Submits Emergency (POST /api/emergency)
-  router.post('/', (req, res) => createEmergencyRequest(req, res, io));
-
-  // Staff Fetches Queue (GET /api/emergency)
-  router.get('/', getEmergencyRequests);
-
-  // Staff Updates Status (PUT /api/emergency/:id)
-  router.put('/:id', (req, res) => updateEmergencyStatus(req, res, io));
-
-  // Staff Assigns Doctor (PUT /api/assignDoctor)
-  router.put('/assignDoctor', (req, res) => assignDoctor(req, res, io));
-
-  // Staff Dispatches Ambulance (PUT /api/dispatchAmbulance)
-  router.put('/dispatchAmbulance', (req, res) => dispatchAmbulance(req, res, io));
+  router.get('/', ctrl.getEmergencies);
+  router.post('/', ctrl.createEmergency);
+  router.put('/approve', ctrl.approveEmergency);
+  router.put('/reject', ctrl.rejectEmergency);
+  router.put('/assignDoctor', ctrl.assignDoctor);
+  router.put('/dispatchAmbulance', ctrl.dispatchAmbulance);
+  router.put('/allocateBed', ctrl.allocateBed);
+  router.put('/requestBlood', ctrl.requestBlood);
+  router.put('/complete', ctrl.completeEmergency);
 
   return router;
 };
-
-module.exports = createEmergencyRoutes;

@@ -21,3 +21,14 @@ export const INITIAL_DOCTORS = [
 export const INITIAL_EMERGENCY_CASES = [
   { id: "ER20260012", patient: "Rahul Sharma", patientName: "Rahul Sharma", age: 42, gender: "Male", phone: "9876543210", emergencyType: "Accident", priority: "Critical", emergencyLevel: "Critical", status: "Pending", doctor: null, assignedDoctor: "Unassigned", ambulance: null, ambulanceDispatched: "None", address: "Sector 32, Chandigarh", description: "Collision trauma near Tribune Chowk", createdAt: "2026-08-07T10:25:00.000Z" }
 ];
+
+export const INITIAL_AMBULANCES = [
+  { id: "AMB-01", number: "PB01AB1234", driver: "Gurpreet Singh", location: "Sector 17 Plaza, Chandigarh", status: "Available" },
+  { id: "AMB-02", number: "CH02CD5678", driver: "Manjit Sharma", location: "Tribune Chowk, Chandigarh", status: "On Route" }
+];
+
+export const INITIAL_BEDS = Array.from({ length: 30 }, (_, i) => ({
+  id: `BED-${i + 1}`,
+  bedNumber: `Bed-${i < 10 ? 'ICU' : 'GEN'}-${i + 1}`,
+  status: i % 3 === 0 ? 'Occupied' : 'Available'
+}));
