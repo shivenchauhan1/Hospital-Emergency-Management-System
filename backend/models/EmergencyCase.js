@@ -10,8 +10,8 @@ const emergencyCaseSchema = new mongoose.Schema({
   priority: { type: String, default: 'Critical', enum: ['Critical', 'High', 'Medium', 'Stable'] },
   status: { 
     type: String, 
-    default: 'Pending', 
-    enum: ['Pending', 'Approved', 'Rejected', 'Doctor Assigned', 'Ambulance Dispatched', 'Hospital Arrival', 'Treatment Started', 'Completed'] 
+    default: 'Submitted', 
+    enum: ['Submitted', 'Pending', 'Approved', 'Rejected', 'Doctor Assigned', 'Ambulance Dispatched', 'Hospital Arrival', 'Treatment Started', 'Completed'] 
   },
   assignedDoctor: { type: String, default: 'Unassigned' },
   ambulanceDispatched: { type: String, default: 'None' },

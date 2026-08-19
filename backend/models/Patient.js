@@ -8,7 +8,7 @@ const patientSchema = new mongoose.Schema({
   phone: { type: String, required: true },
   address: { type: String, default: 'Sector 32, Chandigarh' },
   bloodGroup: { type: String, default: 'O+' },
-  status: { type: String, default: 'Admitted', enum: ['Admitted', 'Discharged', 'Outpatient', 'Critical'] },
+  status: { type: String, default: 'Registered', enum: ['Registered', 'Registered (OPD)', 'Admitted', 'Discharged', 'Outpatient', 'Critical'] },
   ward: { type: String, default: 'General Ward' },
   bedNumber: { type: String, default: 'Bed-GEN-01' },
   attendingDoctor: { type: String, default: 'Dr. Rajesh Sharma' },

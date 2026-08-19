@@ -111,17 +111,41 @@ export default function App() {
   const handleEmergencySubmit = async (e) => {
     e.preventDefault();
     const result = await postEmergency(emergencyForm);
-    const newCase = result.data || {
+    const newCase = (result && result.data) || {
       id: `ER2026${Math.floor(1000 + Math.random() * 9000)}`,
       ...emergencyForm,
-      status: 'Pending',
+      status: 'Submitted',
       createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
+    // Force status to Submitted
+    newCase.status = 'Submitted';
+
     setEmergencyRequests([newCase, ...emergencyRequests]);
+
+    // Remove / Cancel existing OPD appointments when emergency is submitted
+    const removedCount = myAppointments.length;
+    setMyAppointments([]);
+
+    // Local Sync Event for Staff Portal (fallback + cross-tab)
+    try {
+      localStorage.setItem('hems_sync_event', JSON.stringify({
+        type: 'EMERGENCY_SUBMITTED',
+        caseData: newCase,
+        cancelledAppointments: true,
+        timestamp: Date.now()
+      }));
+    } catch (err) {
+      console.warn('LocalStorage sync warning:', err);
+    }
+
     setCreatedNotice({
       id: newCase.id,
-      message: "Emergency request registered & broadcasted to Staff Command Center."
+      status: 'Submitted',
+      type: emergencyForm.emergencyType,
+      message: removedCount > 0
+        ? `Emergency request SUBMITTED successfully! ${removedCount} active OPD appointment(s) have been cancelled and removed.`
+        : "Emergency request SUBMITTED successfully & broadcasted to Staff Command Center!"
     });
   };
 
@@ -136,8 +160,8 @@ export default function App() {
       timeSlot: normalForm.timeSlot
     });
 
-    const patientId = patRes.patientId || `PAT2026${Math.floor(10000 + Math.random() * 90000)}`;
-    const newAppt = apptRes.data || {
+    const patientId = patRes.patientId || (patRes.data && patRes.data.id) || `PAT2026${Math.floor(10000 + Math.random() * 90000)}`;
+    const newAppt = (apptRes && apptRes.data) || {
       id: `APT2026${Math.floor(10000 + Math.random() * 90000)}`,
       patientName: normalForm.name,
       doctorName: normalForm.doctorPreference,
@@ -147,7 +171,33 @@ export default function App() {
       status: 'Appointment Requested'
     };
 
+    const newPatObj = (patRes && patRes.data) || {
+      id: patientId,
+      name: normalForm.name,
+      age: normalForm.age,
+      gender: normalForm.gender,
+      phone: normalForm.phone,
+      address: normalForm.address,
+      bloodGroup: normalForm.bloodGroup,
+      status: 'Registered (OPD)',
+      ward: normalForm.department || 'General OPD Care',
+      attendingDoctor: normalForm.doctorPreference || 'Dr. Rajesh Sharma'
+    };
+
     setMyAppointments([newAppt, ...myAppointments]);
+
+    // Local Sync Event for Staff Portal (fallback + cross-tab)
+    try {
+      localStorage.setItem('hems_sync_event', JSON.stringify({
+        type: 'NORMAL_OPD_BOOKED',
+        appointment: newAppt,
+        patient: newPatObj,
+        timestamp: Date.now()
+      }));
+    } catch (err) {
+      console.warn('LocalStorage sync warning:', err);
+    }
+
     setCreatedNotice({
       id: `${patientId} / ${newAppt.id}`,
       message: "Normal OPD Patient & Appointment registered successfully!"
@@ -466,14 +516,206 @@ export default function App() {
 
           {/* EMERGENCY REGISTRATION TAB */}
           {activeTab === 'emergency-register' && (
-            <div className="w-full bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-md space-y-6 max-w-4xl mx-auto">
-              <h2 className="text-2xl font-black text-slate-900">EMERGENCY CASE REGISTRATION FORM</h2>
-              <form onSubmit={handleEmergencySubmit} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <input type="text" required placeholder="Patient Name" value={emergencyForm.patientName} onChange={(e) => setEmergencyForm({ ...emergencyForm, patientName: e.target.value })} className="w-full bg-slate-50 border p-3 rounded-xl text-xs" />
-                  <input type="text" required placeholder="Phone" value={emergencyForm.phone} onChange={(e) => setEmergencyForm({ ...emergencyForm, phone: e.target.value })} className="w-full bg-slate-50 border p-3 rounded-xl text-xs" />
+            <div className="w-full bg-white rounded-3xl p-6 sm:p-10 border border-red-200 shadow-xl space-y-8 max-w-4xl mx-auto">
+              
+              <div className="border-b border-red-100 pb-4 flex items-start justify-between flex-wrap gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black bg-red-100 text-red-700 mb-2">
+                    <Siren className="w-4 h-4 text-red-600 animate-pulse" />
+                    <span>24×7 Rapid Emergency Triage Unit</span>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-black text-slate-900">EMERGENCY CASE REGISTRATION FORM</h2>
+                  <p className="text-xs text-slate-500 font-medium mt-1">
+                    Select emergency type and submit. Emergency request will show as <strong className="text-red-600 font-bold">SUBMITTED</strong> and automatically cancel/remove any routine OPD appointments.
+                  </p>
                 </div>
-                <button type="submit" className="w-full py-4 text-xs font-black text-white bg-[#DC2626] rounded-2xl shadow-lg">Submit Emergency Case Registration</button>
+
+                <div className="bg-red-50 border border-red-200 px-4 py-2 rounded-2xl text-right">
+                  <span className="text-[10px] uppercase font-bold text-red-500 block">Immediate Helpline</span>
+                  <span className="text-base font-mono font-black text-red-700">112 / 108</span>
+                </div>
+              </div>
+
+              {createdNotice && (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-900 space-y-2">
+                  <div className="flex items-center gap-2 font-black text-sm text-emerald-800">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    <span>EMERGENCY CASE SUBMITTED SUCCESSFULLY!</span>
+                  </div>
+                  <div className="text-xs font-semibold">
+                    Token ID: <span className="font-mono font-bold text-emerald-900">{createdNotice.id}</span> | Status: <span className="font-bold bg-emerald-200 px-2 py-0.5 rounded text-emerald-900">Submitted</span>
+                  </div>
+                  <p className="text-xs text-emerald-700 font-medium">{createdNotice.message}</p>
+                </div>
+              )}
+
+              <form onSubmit={handleEmergencySubmit} className="space-y-6">
+                
+                {/* 1. Emergency Type Selection */}
+                <div className="space-y-3 bg-red-50/50 p-4 sm:p-5 rounded-2xl border border-red-100">
+                  <label className="text-xs font-black uppercase text-red-700 block tracking-wider">
+                    1. Select Type of Emergency *
+                  </label>
+                  
+                  {/* Quick Select Category Chips */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    {[
+                      { type: 'Accident / Road Trauma', icon: '🚗', label: 'Accident / Trauma' },
+                      { type: 'Cardiac Arrest / Chest Pain', icon: '❤️', label: 'Cardiac Arrest' },
+                      { type: 'Stroke / Paralysis', icon: '🧠', label: 'Stroke / Brain' },
+                      { type: 'Severe Trauma / Bleeding', icon: '🩸', label: 'Severe Bleeding' },
+                      { type: 'Respiratory Failure / Breathing Issue', icon: '🫁', label: 'Breathing Emergency' },
+                      { type: 'Burns / Chemical Injury', icon: '🔥', label: 'Severe Burns' },
+                      { type: 'Maternity / Obstetrics Emergency', icon: '🤰', label: 'Maternity Crisis' },
+                      { type: 'Poisoning / Toxicity', icon: '☣️', label: 'Poisoning / Overdose' },
+                      { type: 'General Critical Emergency', icon: '🚨', label: 'General Emergency' }
+                    ].map((item, idx) => (
+                      <button
+                        type="button"
+                        key={idx}
+                        onClick={() => setEmergencyForm({ ...emergencyForm, emergencyType: item.type })}
+                        className={`p-3 rounded-xl border text-left flex items-center gap-2.5 transition-all text-xs font-bold ${
+                          emergencyForm.emergencyType === item.type
+                            ? 'bg-red-600 text-white border-red-700 shadow-md ring-2 ring-red-400'
+                            : 'bg-white text-slate-800 border-slate-200 hover:border-red-300 hover:bg-red-50/50'
+                        }`}
+                      >
+                        <span className="text-base">{item.icon}</span>
+                        <span className="truncate">{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Dropdown Select for Emergency Type */}
+                  <div className="pt-2">
+                    <label className="text-[11px] font-bold text-slate-600 block mb-1">Emergency Category Dropdown Select *</label>
+                    <select 
+                      value={emergencyForm.emergencyType} 
+                      onChange={(e) => setEmergencyForm({ ...emergencyForm, emergencyType: e.target.value })} 
+                      className="w-full bg-white border border-red-300 rounded-xl p-3 text-xs font-black text-red-900 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm"
+                    >
+                      <option value="Accident / Road Trauma">🚗 Accident / Road Trauma</option>
+                      <option value="Cardiac Arrest / Chest Pain">❤️ Cardiac Arrest / Chest Pain</option>
+                      <option value="Stroke / Paralysis">🧠 Stroke / Brain Hemorrhage</option>
+                      <option value="Severe Trauma / Bleeding">🩸 Severe Trauma / Hemorrhage</option>
+                      <option value="Respiratory Failure / Breathing Issue">🫁 Respiratory Failure / Severe Breathing Issue</option>
+                      <option value="Burns / Chemical Injury">🔥 Burns / Chemical Exposure</option>
+                      <option value="Maternity / Obstetrics Emergency">🤰 Maternity / Pregnancy Emergency</option>
+                      <option value="Poisoning / Toxicity">☣️ Poisoning / Overdose Toxicity</option>
+                      <option value="General Critical Emergency">🚨 General Critical Emergency</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* 2. Patient Personal Details */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-black uppercase text-red-700 border-b border-slate-100 pb-1">
+                    2. Patient Contact & Triage Details
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">Patient Full Name *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        placeholder="e.g. Rahul Sharma" 
+                        value={emergencyForm.patientName} 
+                        onChange={(e) => setEmergencyForm({ ...emergencyForm, patientName: e.target.value })} 
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-semibold text-slate-900 focus:outline-none focus:border-red-500" 
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">Contact Phone *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        placeholder="+91 98765 43210" 
+                        value={emergencyForm.phone} 
+                        onChange={(e) => setEmergencyForm({ ...emergencyForm, phone: e.target.value })} 
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-semibold text-slate-900 focus:outline-none focus:border-red-500" 
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">Priority Level *</label>
+                      <select 
+                        value={emergencyForm.priority} 
+                        onChange={(e) => setEmergencyForm({ ...emergencyForm, priority: e.target.value })} 
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold text-red-700 focus:outline-none focus:border-red-500"
+                      >
+                        <option value="Critical">🔴 Critical (Immediate Triage)</option>
+                        <option value="High">🟠 High Priority</option>
+                        <option value="Medium">🟡 Medium Priority</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">Age</label>
+                      <input 
+                        type="number" 
+                        placeholder="Age (Years)" 
+                        value={emergencyForm.age} 
+                        onChange={(e) => setEmergencyForm({ ...emergencyForm, age: e.target.value })} 
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-red-500" 
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">Gender</label>
+                      <select 
+                        value={emergencyForm.gender} 
+                        onChange={(e) => setEmergencyForm({ ...emergencyForm, gender: e.target.value })} 
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-red-500"
+                      >
+                        <option>Male</option>
+                        <option>Female</option>
+                        <option>Other</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Emergency Location / Pickup Address *</label>
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder="Street address, city, landmark for 108 Ambulance" 
+                      value={emergencyForm.address} 
+                      onChange={(e) => setEmergencyForm({ ...emergencyForm, address: e.target.value })} 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-semibold text-slate-900 focus:outline-none focus:border-red-500" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Accident Details & Symptoms Description</label>
+                    <textarea 
+                      rows="3" 
+                      placeholder="Brief details about the condition, injury, consciousness, or ambulance requirement..." 
+                      value={emergencyForm.description} 
+                      onChange={(e) => setEmergencyForm({ ...emergencyForm, description: e.target.value })} 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-red-500" 
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                  <p className="font-semibold">
+                    <strong>Note:</strong> Submitting this emergency request will register your case with status <strong className="text-red-700">SUBMITTED</strong>, notify trauma doctors, and automatically remove/cancel any active OPD consultation appointments.
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-4 rounded-2xl font-black text-xs text-white bg-[#DC2626] hover:bg-red-700 shadow-xl shadow-red-600/30 transition-all flex items-center justify-center gap-2 tracking-wide"
+                >
+                  <Siren className="w-5 h-5 animate-bounce" />
+                  <span>SUBMIT EMERGENCY REQUEST (STATUS: SUBMITTED)</span>
+                </button>
               </form>
             </div>
           )}

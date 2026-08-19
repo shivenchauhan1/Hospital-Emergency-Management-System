@@ -86,11 +86,21 @@ export default function App() {
     loadAllData();
 
     socket.on('new_emergency_request', (newCase) => {
-      setEmergencyCases(prev => [newCase, ...prev]);
+      setEmergencyCases(prev => [newCase, ...prev.filter(c => c.id !== newCase.id)]);
+      setNotifications(prev => [
+        {
+          id: Date.now(),
+          title: '🚨 NEW EMERGENCY SUBMITTED',
+          time: 'Just now',
+          message: `${newCase.id} - ${newCase.patientName || newCase.patient} (${newCase.emergencyType || 'Critical Emergency'})`,
+          type: 'emergency'
+        },
+        ...prev
+      ]);
     });
 
     socket.on('new_appointment', (newAppt) => {
-      setAppointments(prev => [newAppt, ...prev]);
+      setAppointments(prev => [newAppt, ...prev.filter(a => a.id !== newAppt.id)]);
       setNotifications(prev => [
         {
           id: Date.now(),
@@ -98,6 +108,20 @@ export default function App() {
           time: 'Just now',
           message: `${newAppt.id} - ${newAppt.patientName} (${newAppt.department})`,
           type: 'appointment'
+        },
+        ...prev
+      ]);
+    });
+
+    socket.on('new_patient', (newPat) => {
+      setPatients(prev => [newPat, ...prev.filter(p => p.id !== newPat.id)]);
+      setNotifications(prev => [
+        {
+          id: Date.now(),
+          title: '👤 NEW OPD PATIENT REGISTERED',
+          time: 'Just now',
+          message: `${newPat.id} - ${newPat.name} (${newPat.ward || 'OPD Care'})`,
+          type: 'patient'
         },
         ...prev
       ]);
@@ -111,11 +135,43 @@ export default function App() {
       setAppointments(prev => prev.map(a => a.id === updatedAppt.id ? updatedAppt : a));
     });
 
+    // Cross-Tab Local Storage Fallback Listener (Immediate sync)
+    const handleStorageChange = (e) => {
+      if (e.key === 'hems_sync_event' && e.newValue) {
+        try {
+          const eventData = JSON.parse(e.newValue);
+          if (eventData.type === 'NORMAL_OPD_BOOKED') {
+            if (eventData.appointment) {
+              setAppointments(prev => [eventData.appointment, ...prev.filter(a => a.id !== eventData.appointment.id)]);
+            }
+            if (eventData.patient) {
+              setPatients(prev => [eventData.patient, ...prev.filter(p => p.id !== eventData.patient.id)]);
+            }
+          } else if (eventData.type === 'EMERGENCY_SUBMITTED') {
+            if (eventData.caseData) {
+              setEmergencyCases(prev => [eventData.caseData, ...prev.filter(c => c.id !== eventData.caseData.id)]);
+            }
+            if (eventData.cancelledAppointments) {
+              setAppointments(prev => prev.map(a => ({
+                ...a,
+                status: a.status === 'Appointment Requested' || a.status === 'Approved' ? 'Cancelled - Emergency Submitted' : a.status
+              })));
+            }
+          }
+        } catch (err) {
+          console.warn('Local sync parse error:', err);
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
     return () => {
       socket.off('new_emergency_request');
       socket.off('new_appointment');
+      socket.off('new_patient');
       socket.off('case_updated');
       socket.off('appointment_approved');
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
@@ -371,10 +427,24 @@ export default function App() {
           {activeConsole === 'appointments' && (
             <div className="w-full bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
               <div className="flex justify-between items-center flex-wrap gap-4">
-                <h2 className="text-xl font-black text-slate-900">OPD Appointments Management Console</h2>
-                <span className="text-xs font-mono font-bold text-[#0F766E] bg-teal-50 px-2.5 py-1 rounded-full border border-teal-200">
-                  Total Bookings: {appointments.length}
-                </span>
+                <div>
+                  <h2 className="text-xl font-black text-slate-900">OPD Appointments & Normal Patient Intake Console</h2>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    Real-time list of all OPD consultation bookings registered from the Patient Website.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Search patient name, ID..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#0F766E]"
+                  />
+                  <span className="text-xs font-mono font-bold text-[#0F766E] bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-200">
+                    Total Bookings: {appointments.length}
+                  </span>
+                </div>
               </div>
 
               <div className="overflow-x-auto w-full">
@@ -391,21 +461,36 @@ export default function App() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {appointments.map((appt) => (
-                      <tr key={appt.id}>
+                    {appointments
+                      .filter(a => !searchQuery || (a.patientName && a.patientName.toLowerCase().includes(searchQuery.toLowerCase())) || (a.id && a.id.toLowerCase().includes(searchQuery.toLowerCase())))
+                      .map((appt) => (
+                      <tr key={appt.id} className="hover:bg-slate-50/50">
                         <td className="p-3.5 font-mono font-bold text-[#0F766E]">{appt.id}</td>
                         <td className="p-3.5 font-extrabold text-slate-900">{appt.patientName}</td>
-                        <td className="p-3.5 font-semibold text-[#0F766E]">{appt.doctorName}</td>
-                        <td className="p-3.5 font-medium">{appt.department}</td>
+                        <td className="p-3.5 font-semibold text-[#0F766E]">{appt.doctorName || 'Dr. Rajesh Sharma'}</td>
+                        <td className="p-3.5 font-medium">{appt.department || 'General Medicine'}</td>
                         <td className="p-3.5 font-mono">{appt.date} ({appt.timeSlot})</td>
-                        <td className="p-3.5"><span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-teal-100 text-teal-800">{appt.status}</span></td>
+                        <td className="p-3.5">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
+                            appt.status === 'Approved' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
+                            appt.status === 'Completed' ? 'bg-slate-200 text-slate-800' :
+                            appt.status && appt.status.includes('Cancelled') ? 'bg-red-100 text-red-800 border border-red-200' :
+                            'bg-teal-100 text-teal-800 border border-teal-200'
+                          }`}>
+                            {appt.status}
+                          </span>
+                        </td>
                         <td className="p-3.5 text-center">
                           <div className="flex justify-center gap-1.5 flex-wrap">
-                            {appt.status !== 'Approved' && appt.status !== 'Completed' && (
-                              <button onClick={() => handleApproveAppointment(appt.id)} className="px-2.5 py-1 text-xs font-black bg-emerald-600 text-white rounded-lg">Approve</button>
+                            {appt.status !== 'Approved' && appt.status !== 'Completed' && !appt.status.includes('Cancelled') && (
+                              <button onClick={() => handleApproveAppointment(appt.id)} className="px-2.5 py-1 text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors">Approve</button>
                             )}
-                            <button onClick={() => handleAssignDoctorAppointment(appt.id, 'Dr. Rajesh Sharma')} className="px-2.5 py-1 text-xs font-black bg-teal-50 text-[#0F766E] border border-teal-200 rounded-lg">Assign Dr. Sharma</button>
-                            <button onClick={() => handleCompleteAppointment(appt.id)} className="px-2.5 py-1 text-xs font-black bg-slate-900 text-white rounded-lg">Mark Completed</button>
+                            {appt.status !== 'Completed' && !appt.status.includes('Cancelled') && (
+                              <>
+                                <button onClick={() => handleAssignDoctorAppointment(appt.id, 'Dr. Rajesh Sharma')} className="px-2.5 py-1 text-xs font-black bg-teal-50 text-[#0F766E] border border-teal-200 hover:bg-teal-100 rounded-lg transition-colors">Assign Dr. Sharma</button>
+                                <button onClick={() => handleCompleteAppointment(appt.id)} className="px-2.5 py-1 text-xs font-black bg-slate-900 hover:bg-black text-white rounded-lg transition-colors">Mark Completed</button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -419,7 +504,12 @@ export default function App() {
           {/* EMERGENCY CONSOLE */}
           {activeConsole === 'emergency' && (
             <div className="w-full bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <h2 className="text-xl font-black text-slate-900">Emergency Intake Queue</h2>
+              <div className="flex justify-between items-center flex-wrap gap-4">
+                <h2 className="text-xl font-black text-slate-900">Emergency Intake Queue</h2>
+                <span className="text-xs font-mono font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-xl border border-red-200">
+                  Total Cases: {emergencyCases.length}
+                </span>
+              </div>
               <div className="overflow-x-auto w-full">
                 <table className="w-full text-left text-xs border-collapse font-sans min-w-[700px]">
                   <thead>
@@ -434,14 +524,24 @@ export default function App() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {emergencyCases.map((c) => (
-                      <tr key={c.id}>
+                      <tr key={c.id} className="hover:bg-slate-50/50">
                         <td className="p-3 font-mono font-bold text-[#0F766E]">{c.id}</td>
-                        <td className="p-3 font-extrabold">{c.patientName || c.patient}</td>
+                        <td className="p-3 font-extrabold text-slate-900">{c.patientName || c.patient}</td>
                         <td className="p-3 font-bold text-red-700">{c.emergencyType}</td>
-                        <td className="p-3"><span className="px-2 py-0.5 text-[10px] font-bold bg-red-600 text-white rounded">{c.priority}</span></td>
-                        <td className="p-3 font-bold text-teal-800">{c.status}</td>
+                        <td className="p-3"><span className="px-2 py-0.5 text-[10px] font-bold bg-red-600 text-white rounded">{c.priority || 'Critical'}</span></td>
+                        <td className="p-3 font-bold">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
+                            c.status === 'Submitted' ? 'bg-amber-100 text-amber-900 border border-amber-300' :
+                            c.status === 'Approved' ? 'bg-emerald-100 text-emerald-800' :
+                            'bg-red-50 text-red-800'
+                          }`}>
+                            {c.status}
+                          </span>
+                        </td>
                         <td className="p-3 text-center">
-                          <button onClick={() => handleApproveEmergency(c.id)} className="px-2.5 py-1 bg-emerald-600 text-white font-bold rounded-lg text-xs">Approve</button>
+                          {c.status !== 'Approved' && (
+                            <button onClick={() => handleApproveEmergency(c.id)} className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-colors">Approve</button>
+                          )}
                         </td>
                       </tr>
                     ))}

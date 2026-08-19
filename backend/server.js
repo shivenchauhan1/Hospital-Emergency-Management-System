@@ -36,7 +36,7 @@ const departmentRoutes = require('./routes/departmentRoutes');
 const ambulanceRoutes = require('./routes/ambulanceRoutes');
 const bedRoutes = require('./routes/bedRoutes');
 const bloodRoutes = require('./routes/bloodRoutes');
-const patientRoutes = require('./routes/patientRoutes');
+const createPatientRoutes = require('./routes/patientRoutes');
 const staffRoutes = require('./routes/staffRoutes');
 
 app.use('/api', authRoutes);
@@ -47,8 +47,8 @@ app.use('/api/departments', departmentRoutes);
 app.use('/api/ambulances', ambulanceRoutes);
 app.use('/api/beds', bedRoutes);
 app.use('/api/blood', bloodRoutes);
-app.use('/api/patient', patientRoutes);
-app.use('/api/patients', patientRoutes);
+app.use('/api/patient', createPatientRoutes(io));
+app.use('/api/patients', createPatientRoutes(io));
 app.use('/api/staff', staffRoutes);
 
 // Helper Root Status Endpoint
