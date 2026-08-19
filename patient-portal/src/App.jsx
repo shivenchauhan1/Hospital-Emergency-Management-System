@@ -78,7 +78,14 @@ export default function App() {
       setBeds(bedData);
       setBloodStock(bloodData);
       setEmergencyRequests(erData);
-      setMyAppointments(apptData);
+
+      const isCleared = localStorage.getItem('patient_appointments_cleared') === 'true';
+      const isEmergencySubmitted = localStorage.getItem('patient_emergency_submitted') === 'true';
+      if (isCleared || isEmergencySubmitted) {
+        setMyAppointments([]);
+      } else {
+        setMyAppointments(apptData);
+      }
     };
 
     loadInitialData();
@@ -108,6 +115,36 @@ export default function App() {
     };
   }, []);
 
+  const handleRemoveAppointment = (id) => {
+    const updated = myAppointments.filter(a => a.id !== id);
+    setMyAppointments(updated);
+    if (updated.length === 0) {
+      localStorage.setItem('patient_appointments_cleared', 'true');
+    }
+    try {
+      localStorage.setItem('hems_sync_event', JSON.stringify({
+        type: 'APPOINTMENT_CANCELLED',
+        appointmentId: id,
+        timestamp: Date.now()
+      }));
+    } catch (err) {
+      console.warn('Sync error:', err);
+    }
+  };
+
+  const handleClearAllAppointments = () => {
+    setMyAppointments([]);
+    localStorage.setItem('patient_appointments_cleared', 'true');
+    try {
+      localStorage.setItem('hems_sync_event', JSON.stringify({
+        type: 'ALL_APPOINTMENTS_CANCELLED',
+        timestamp: Date.now()
+      }));
+    } catch (err) {
+      console.warn('Sync error:', err);
+    }
+  };
+
   const handleEmergencySubmit = async (e) => {
     e.preventDefault();
     const result = await postEmergency(emergencyForm);
@@ -126,6 +163,8 @@ export default function App() {
     // Remove / Cancel existing OPD appointments when emergency is submitted
     const removedCount = myAppointments.length;
     setMyAppointments([]);
+    localStorage.setItem('patient_emergency_submitted', 'true');
+    localStorage.setItem('patient_appointments_cleared', 'true');
 
     // Local Sync Event for Staff Portal (fallback + cross-tab)
     try {
@@ -183,6 +222,9 @@ export default function App() {
       ward: normalForm.department || 'General OPD Care',
       attendingDoctor: normalForm.doctorPreference || 'Dr. Rajesh Sharma'
     };
+
+    localStorage.removeItem('patient_appointments_cleared');
+    localStorage.removeItem('patient_emergency_submitted');
 
     setMyAppointments([newAppt, ...myAppointments]);
 
@@ -722,44 +764,102 @@ export default function App() {
 
           {/* MY APPOINTMENTS TAB */}
           {activeTab === 'appointments' && (
-            <div className="w-full bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
-              <div className="flex justify-between items-center flex-wrap gap-4">
-                <h2 className="text-2xl font-black text-slate-900">My Registered OPD Appointments</h2>
-                <button onClick={() => setActiveTab('normal-register')} className="px-4 py-2 bg-[#0F766E] text-white text-xs font-black rounded-xl flex items-center gap-2">
-                  <Plus className="w-4 h-4" /> Book New Appointment
-                </button>
+            <div className="w-full bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
+              <div className="flex justify-between items-center flex-wrap gap-4 border-b border-slate-100 pb-4">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900">My Registered OPD Appointments</h2>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    Manage your outpatient doctor consultations and appointment slips.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  {myAppointments.length > 0 && (
+                    <button 
+                      onClick={handleClearAllAppointments} 
+                      className="px-3 py-2 bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" /> Clear All Appointments
+                    </button>
+                  )}
+                  <button onClick={() => setActiveTab('normal-register')} className="px-4 py-2 bg-[#0F766E] hover:bg-teal-800 text-white text-xs font-black rounded-xl flex items-center gap-2 transition-colors">
+                    <Plus className="w-4 h-4" /> Book New Appointment
+                  </button>
+                </div>
               </div>
 
-              <div className="overflow-x-auto w-full">
-                <table className="w-full text-left text-xs border-collapse font-sans min-w-[750px]">
-                  <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-extrabold uppercase">
-                      <th className="p-3">Appointment ID</th>
-                      <th className="p-3">Patient Name</th>
-                      <th className="p-3">Doctor</th>
-                      <th className="p-3">Department</th>
-                      <th className="p-3">Date / Time Slot</th>
-                      <th className="p-3">Status</th>
-                      <th className="p-3 text-center">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {myAppointments.map((appt) => (
-                      <tr key={appt.id}>
-                        <td className="p-3 font-mono font-bold text-[#0F766E]">{appt.id}</td>
-                        <td className="p-3 font-extrabold text-slate-900">{appt.patientName}</td>
-                        <td className="p-3 font-semibold text-[#0F766E]">{appt.doctorName}</td>
-                        <td className="p-3 font-medium">{appt.department}</td>
-                        <td className="p-3 font-mono">{appt.date} ({appt.timeSlot})</td>
-                        <td className="p-3"><span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-teal-100 text-teal-800">{appt.status}</span></td>
-                        <td className="p-3 text-center">
-                          <button className="px-3 py-1 bg-slate-900 text-white rounded-lg font-bold text-[10px]">Download Slip</button>
-                        </td>
+              {myAppointments.length === 0 ? (
+                <div className="p-10 text-center space-y-4 bg-slate-50/60 rounded-3xl border border-dashed border-slate-200 max-w-lg mx-auto my-6">
+                  <div className="w-14 h-14 rounded-2xl bg-teal-50 text-[#0F766E] flex items-center justify-center text-2xl mx-auto shadow-sm border border-teal-100">
+                    🩺
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-black text-slate-900">No Active OPD Appointments</h3>
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                      You currently have no scheduled OPD consultation appointments. Active appointments are automatically removed when an emergency case is submitted or manually cancelled.
+                    </p>
+                  </div>
+                  <div className="pt-2 flex justify-center gap-3 flex-wrap">
+                    <button 
+                      onClick={() => setActiveTab('normal-register')} 
+                      className="px-4 py-2.5 bg-[#0F766E] text-white rounded-xl text-xs font-black shadow-md hover:bg-teal-800 transition-colors"
+                    >
+                      Book OPD Consultation
+                    </button>
+                    <button 
+                      onClick={() => setActiveTab('emergency-register')} 
+                      className="px-4 py-2.5 bg-red-600 text-white rounded-xl text-xs font-black shadow-md hover:bg-red-700 transition-colors"
+                    >
+                      Register Emergency
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="overflow-x-auto w-full">
+                  <table className="w-full text-left text-xs border-collapse font-sans min-w-[750px]">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-extrabold uppercase">
+                        <th className="p-3">Appointment ID</th>
+                        <th className="p-3">Patient Name</th>
+                        <th className="p-3">Doctor</th>
+                        <th className="p-3">Department</th>
+                        <th className="p-3">Date / Time Slot</th>
+                        <th className="p-3">Status</th>
+                        <th className="p-3 text-center">Action</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {myAppointments.map((appt) => (
+                        <tr key={appt.id} className="hover:bg-slate-50/50">
+                          <td className="p-3 font-mono font-bold text-[#0F766E]">{appt.id}</td>
+                          <td className="p-3 font-extrabold text-slate-900">{appt.patientName}</td>
+                          <td className="p-3 font-semibold text-[#0F766E]">{appt.doctorName}</td>
+                          <td className="p-3 font-medium">{appt.department}</td>
+                          <td className="p-3 font-mono">{appt.date} ({appt.timeSlot})</td>
+                          <td className="p-3">
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-teal-100 text-teal-800">
+                              {appt.status}
+                            </span>
+                          </td>
+                          <td className="p-3 text-center">
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button className="px-2.5 py-1 bg-slate-900 hover:bg-black text-white rounded-lg font-bold text-[10px]">
+                                Download Slip
+                              </button>
+                              <button 
+                                onClick={() => handleRemoveAppointment(appt.id)}
+                                className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg font-bold text-[10px] transition-colors"
+                              >
+                                Cancel / Remove
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
