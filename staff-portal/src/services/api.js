@@ -80,7 +80,16 @@ export const fetchEmergencyQueue = async () => {
   try {
     const res = await api.get('/emergency/queue');
     if (res.data && res.data.data) {
-      const data = res.data.data;
+      const data = Array.isArray(res.data.data) ? res.data.data : [];
+      // If queue is empty (all cases non-pending), fall through to fetchStaffEmergencies
+      if (data.length === 0) {
+        const allRes = await api.get('/emergency');
+        if (allRes.data && allRes.data.data && allRes.data.data.length > 0) {
+          const allData = allRes.data.data;
+          allData.isFallbackData = false;
+          return allData;
+        }
+      }
       data.isFallbackData = false;
       return data;
     }
