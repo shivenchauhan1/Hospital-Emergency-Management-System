@@ -4,7 +4,7 @@ import {
   INITIAL_AMBULANCES, INITIAL_BEDS 
 } from '../data/hospitalStore';
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://hospital-emergency-management-system-1qmx.onrender.com/api';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -127,6 +127,35 @@ export const fetchAppointmentsAPI = async () => {
     { id: 'APT202600001', patientName: 'Rahul Sharma', doctorName: 'Dr. Rajesh Sharma', department: 'Cardiology', date: '2026-08-08', timeSlot: '10:00 AM - 10:30 AM', status: 'Appointment Requested' },
     { id: 'APT202600002', patientName: 'Pooja Verma', doctorName: 'Dr. Priya Mehta', department: 'Neurology', date: '2026-08-08', timeSlot: '02:00 PM - 02:30 PM', status: 'Approved' }
   ];
+};
+
+// Task 5: LRU Cache Diagnostic Report API
+export const fetchPatientReportsAPI = async (patientId) => {
+  try {
+    const res = await api.get(`/patient/reports/${patientId}`);
+    return res.data;
+  } catch (e) {
+    console.warn('Backend fetchPatientReports failed');
+  }
+};
+
+// Task 6: Union-Find Compatible Blood Group API
+export const fetchCompatibleBloodAPI = async (group) => {
+  try {
+    const res = await api.get(`/blood/compatible/${group}`);
+    return res.data;
+  } catch (e) {
+    console.warn('Backend fetchCompatibleBlood failed');
+  }
+};
+
+export const requestBloodAPI = async (bloodReqData) => {
+  try {
+    const res = await api.post('/blood/request', bloodReqData);
+    return res.data;
+  } catch (e) {
+    console.warn('Backend requestBlood failed');
+  }
 };
 
 export default api;

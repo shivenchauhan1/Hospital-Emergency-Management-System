@@ -6,6 +6,7 @@ module.exports = (io) => {
   const ctrl = emergencyController(io);
 
   router.get('/', ctrl.getEmergencies);
+  router.get('/queue', ctrl.getEmergencyQueue); // Live Priority Queue Console Endpoint
   router.post('/', ctrl.createEmergency);
   router.put('/approve', ctrl.approveEmergency);
   router.put('/reject', ctrl.rejectEmergency);

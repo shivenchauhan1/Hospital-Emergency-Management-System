@@ -7,113 +7,99 @@
 
 ---
 
-## 📌 Architecture Overview
+## 📌 Architecture & Data Structures Overview
 
 ```
 Hospital-Emergency-Management-System
 │
 ├── patient-portal          # Patient Public Web App (React + Vite + Tailwind)
-│   ├── src/components      # Patient Registration, Tracker, QR Code, Reports
-│   ├── src/pages           # Home, Emergency, Doctors, Blood Bank, Appointments
-│   └── package.json
+│   ├── src/components      # Patient Registration, Tracker, Diagnostic Reports
+│   └── src/pages           # Home, Emergency, Doctors, Blood Bank, Appointments
 │
 ├── staff-portal            # Hospital Staff Command Portal (React + Vite + Tailwind)
-│   ├── src/components      # RBAC Approvals, Doctor Panel, Bed Matrix, 108 Fleet
-│   ├── src/pages           # Admin Dashboard, Emergency Queue, Analytics
-│   └── package.json
+│   ├── src/components      # Priority Queue Console, Dijkstra Dispatch, Bed Matrix
+│   └── src/pages           # Admin Dashboard, Emergency Queue, Analytics
 │
-├── backend                 # Node.js + Express + MongoDB + Socket.IO Engine
-│   ├── config/db.js        # MongoDB Atlas Mongoose Config
-│   ├── controllers/        # authController.js, emergencyController.js
-│   ├── middleware/         # auth.js (JWT Verification & RBAC Guards)
-│   ├── models/             # User, Patient, Doctor, EmergencyRequest, etc.
-│   ├── routes/             # REST API Endpoints
-│   ├── socket/             # Socket.IO Real-Time Stream Engine
-│   ├── uploads/            # Diagnostic Scans (X-Ray, MRI, CT Scan)
-│   ├── utils/              # Email Service & QR Code Generator
-│   ├── server.js
-│   └── package.json
+├── backend                 # Node.js + Express + MongoDB + Socket.IO + Custom DSA Engine
+│   ├── dsa/                # Custom Data Structure Engine Classes (Zero npm dependencies)
+│   │   ├── PriorityQueue.js # Binary Min-Heap Triage Queue with FIFO tie-breaker
+│   │   ├── Graph.js         # Weighted Graph & Dijkstra Shortest Path Engine
+│   │   ├── CaseCache.js     # O(1) Hash Map Cache with DB-First Consistency
+│   │   ├── BedAllocator.js  # Greedy Interval Free-List Stacks with Fallback Chain
+│   │   ├── LRUCache.js      # Doubly-Linked List + Hash Map LRU Report Cache
+│   │   ├── UnionFind.js     # Disjoint-Set Blood Group Compatibility Engine
+│   │   └── testDSA.js       # Automated Plain-Assertion Unit Test Runner
+│   ├── config/              # MongoDB Atlas Mongoose Config & Seeder
+│   ├── controllers/         # emergencyController, ambulanceController, bedController, etc.
+│   ├── models/              # EmergencyCase, Ambulance, Bed, BloodInventory, Patient, Report
+│   ├── routes/              # REST API Endpoints (/api/emergency/queue, /api/ambulances/dispatch, etc.)
+│   ├── socket/              # Socket.IO Real-Time Stream Engine (queue_updated, case_updated)
+│   └── server.js            # Express Server & Cache Hydration Engine
 │
 └── README.md
 ```
 
 ---
 
-## 🛠️ Technology Stack
+## 🧠 Data Structures Used (Custom JavaScript Engine)
 
-- **Frontend**: React.js + Vite, Tailwind CSS, Lucide Icons, Recharts, Socket.IO Client
-- **Backend**: Node.js, Express.js, Socket.IO, JWT Authentication, Multer, Nodemailer
-- **Database**: MongoDB Atlas / Mongoose Schema Models
-- **Deployment**:
-  - **Patient Portal**: Vercel (`https://hospital-emergency-management-syste.vercel.app/`)
-  - **Staff Portal**: Vercel
-  - **Backend API**: Render / Railway (`port 5000`)
-  - **Database**: MongoDB Atlas M0 Cluster
+All data structures are implemented from scratch in `backend/dsa/` as pure JavaScript classes without external libraries.
+
+| Data Structure | Class & File Path | Applied Hospital Feature | Time / Space Complexity | Justification & Architectural Benefit |
+| :--- | :--- | :--- | :--- | :--- |
+| **Binary Min-Heap** | `PriorityQueue.js`<br>`(backend/dsa/)` | **Emergency Triage Queue** (`GET /api/emergency/queue`) | Insert: $O(\log N)$<br>Extract: $O(\log N)$<br>Peek: $O(1)$ | Fixes triage sorting bug where earlier Medium cases ranked above later Critical cases. Ranks cases by severity (`Critical` > `High` > `Medium`) with `createdAt` FIFO tiebreaker. |
+| **Weighted Graph + Dijkstra** | `Graph.js`<br>`(backend/dsa/)` | **108 Ambulance Dispatch** (`POST /api/ambulances/dispatch`) | Dijkstra: $O((V + E) \log V)$ | Computes shortest road distance from emergency incident zone (e.g., Sector 17, PGI, Mohali) to available 108 ambulances, dispatching the nearest fleet vehicle. |
+| **Hash Map Cache** | `CaseCache.js`<br>`(backend/dsa/)` | **Emergency Case Cache** (In-Memory Engine) | Lookups: $O(1)$<br>Inserts: $O(1)$ | Provides instantaneous $O(1)$ case lookups and dual-writes with MongoDB (DB-First rule) to broadcast real-time Socket.IO triage updates without DB bottlenecks. |
+| **Greedy Free-List Stacks** | `BedAllocator.js`<br>`(backend/dsa/)` | **ICU & Ward Bed Allocation** (`POST /api/beds/allocate`) | Pop/Push: $O(1)$ | Manages category free-lists (`ICU`, `EmergencyBay`, `General`). Executes greedy fallback chain for Critical patients when primary category is full. |
+| **Doubly-Linked List + Hash Map** | `LRUCache.js`<br>`(backend/dsa/)` | **Diagnostic Reports Cache** (`GET /api/patient/reports/:id`) | Get: $O(1)$<br>Put: $O(1)$ | Caches recently viewed patient MRI/X-Ray diagnostic scans with fixed capacity (20), evicting least-recently-used scans to optimize memory usage. |
+| **Disjoint-Set (Union-Find)** | `UnionFind.js`<br>`(backend/dsa/)` | **Blood Group Compatibility** (`GET /api/blood/compatible/:group`) | Find/Union: $O(\alpha(N))$ *(Nearly $O(1)$)* | Uses path compression and rank union to group compatible blood donors ($O-$ universal donor unioned across all recipient types). |
 
 ---
 
-## ⚡ Key Features
+## 🛠️ Technology Stack
 
-### 1. 🌐 Patient Portal (`patient-portal/`)
-- **Strict Read-Only Permission Guard**: Patients CANNOT alter hospital records, assign doctors, allocate beds, or dispatch ambulances.
-- **Emergency Case Registration**:
-  - Patient Name, Age, Gender, Phone, Address, Emergency Type (*Accident, Heart Attack, Stroke, Burn, Fracture, Poisoning, Other*), Priority (*Critical, High, Medium*), Description, Photo Upload.
-  - ID Generator: `ER20260012`.
-- **5-Stage Real-Time Request Tracker**:
-  - `Pending` ➔ `Approved` ➔ `Doctor Assigned (Dr. Rajesh Sharma)` ➔ `108 Ambulance Dispatched (PB01AB1234)` ➔ `Treatment Started`.
-- **Medical Reports & Diagnostics**:
-  - Upload & Download PDF Clinical Reports, Chest X-Rays, Brain MRI Scans, Abdominal CT Scans.
-- **Digital Patient Health ID QR Code**:
-  - Instant QR Code modal generation for emergency kiosk scanning.
-- **Notifications Bell**: Real-time alerts for case approvals and doctor assignments.
-
-### 2. 🩺 Staff Portal (`staff-portal/`)
-- **Role-Based Access Control (RBAC)**: Admin, Doctor, Receptionist, Blood Bank Staff, 108 Ambulance Staff.
-- **Operations Command Dashboard**:
-  - Metrics: Today's Patients (127), Pending Requests, Emergency Cases, Available Doctors (58), Beds Free (22/50 ICU), Blood Units (320), 108 Ambulances (11).
-- **Emergency Queue Console**:
-  - Review `ER20260012` (Rahul Sharma, Accident, Critical, Pending) with direct control buttons: **Approve**, **Reject**, **Assign Doctor (Dr. Rajesh Sharma)**, **Dispatch 108 Ambulance**.
-- **Bed Management Console**:
-  - Real-time allocation & release for 170 beds across ICU, Emergency Bays, and General Wards.
-- **Recharts Operational Analytics**:
-  - Interactive Weekly, Monthly, and Yearly emergency intake charts.
-- **Report Generation**: PDF download & Excel dataset export.
+- **Frontend**: React.js + Vite, Tailwind CSS, Lucide Icons, Recharts, Socket.IO Client
+- **Backend**: Node.js, Express.js, Custom DSA Engine, Socket.IO, Mongoose
+- **Database**: MongoDB Atlas M0 Cluster
+- **Testing**: Plain Assertion Automated DSA Test Suite (`node backend/dsa/testDSA.js`)
 
 ---
 
 ## 🔌 API Documentation
 
-| Method | Endpoint | Description | Permission |
+| Method | Endpoint | Description | Data Structure Engine |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/register` | Patient Registration | Public |
-| `POST` | `/api/login` | Patient & Staff Login (JWT) | Public |
-| `POST` | `/api/emergency` | Register Emergency Case | Patient |
-| `GET` | `/api/emergency` | Fetch Emergency Queue | Staff |
-| `PUT` | `/api/emergency/:id` | Approve/Reject Request | Staff |
-| `PUT` | `/api/emergency/assignDoctor` | Assign Specialist Doctor | Staff |
-| `PUT` | `/api/emergency/dispatchAmbulance` | Dispatch 108 Ambulance | Staff |
+| `GET` | `/api/emergency/queue` | Live Triage Ranked Queue | **PriorityQueue (Min-Heap)** |
+| `POST` | `/api/ambulances/dispatch` | Dispatch Nearest Ambulance | **Graph + Dijkstra Algorithm** |
+| `POST` | `/api/beds/allocate` | Allocate Bed with Critical Fallback | **BedAllocator (Free-List Stacks)** |
+| `POST` | `/api/beds/release` | Release Bed Back to Free-List | **BedAllocator (Free-List Stacks)** |
+| `GET` | `/api/patient/reports/:id` | Fetch Diagnostic Reports | **LRUCache (List + Map)** |
+| `GET` | `/api/blood/compatible/:group` | Compatible Blood Stock Lookup | **Union-Find Disjoint-Set** |
 
 ---
 
-## 💻 Local Setup & Installation
+## 💻 Local Setup & Test Suite Execution
 
 ```bash
 # 1. Clone Repository
 git clone https://github.com/shivenchauhan1/Hospital-Emergency-Management-System.git
 cd Hospital-Emergency-Management-System
 
-# 2. Run Backend Engine
+# 2. Run Automated DSA Unit Test Suite (Zero Dependencies)
+node backend/dsa/testDSA.js
+
+# 3. Start Backend Engine
 cd backend
 npm install
 npm start
 
-# 3. Run Patient Portal
-cd ../patient-portal
+# 4. Start Staff Portal Command Center
+cd ../staff-portal
 npm install
 npm run dev
 
-# 4. Run Staff Portal
-cd ../staff-portal
+# 5. Start Patient Portal
+cd ../patient-portal
 npm install
 npm run dev
 ```

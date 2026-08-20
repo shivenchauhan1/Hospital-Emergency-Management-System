@@ -1,7 +1,13 @@
 const express = require('express');
-const router = express.Router();
-const { getBeds } = require('../controllers/bedController');
+const bedController = require('../controllers/bedController');
 
-router.get('/', getBeds);
+module.exports = (io) => {
+  const router = express.Router();
+  const ctrl = bedController(io);
 
-module.exports = router;
+  router.get('/', ctrl.getBeds);
+  router.post('/allocate', ctrl.allocateBed);
+  router.post('/release', ctrl.releaseBed);
+
+  return router;
+};

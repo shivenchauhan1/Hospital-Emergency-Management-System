@@ -6,6 +6,8 @@ module.exports = (io) => {
   const ctrl = patientController(io);
 
   router.get('/', ctrl.getPatients);
+  router.get('/reports/:patientId', ctrl.getPatientReports); // LRU Cache Report Endpoint
+  router.get('/report/single/:reportId', ctrl.getSingleReport); // LRU Cache Single Report Endpoint
   router.post('/register', ctrl.registerPatient);
   router.post('/', ctrl.createPatient);
   router.put('/:id', ctrl.updatePatient);

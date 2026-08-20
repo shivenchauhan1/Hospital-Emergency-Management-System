@@ -5,21 +5,18 @@ import {
   FileText, Bell, Settings, LogOut, Menu, X, Clock, AlertTriangle, 
   PhoneCall, ChevronRight, UserPlus, FileCheck, Layers, RefreshCw, 
   Filter, Calendar, BarChart3, TrendingUp, Plus, Trash2, Edit3, Eye, 
-  CheckSquare, ShieldAlert, HeartPulse 
+  CheckSquare, ShieldAlert, HeartPulse, Cpu, Sparkles 
 } from 'lucide-react';
-import { 
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, 
-  CartesianGrid, LineChart, Line, PieChart, Pie, Cell 
-} from 'recharts';
 import { 
   HOSPITAL_INFO, INITIAL_DOCTORS, INITIAL_EMERGENCY_CASES, 
   INITIAL_AMBULANCES, INITIAL_BEDS 
 } from './data/hospitalStore';
 import { 
-  fetchStaffEmergencies, fetchPatients, createPatientAPI, deletePatientAPI, 
+  fetchStaffEmergencies, fetchEmergencyQueue, fetchPatients, createPatientAPI, deletePatientAPI, 
   fetchStaffMembers, createStaffAPI, approveEmergencyAPI, assignDoctorAPI, 
-  dispatchAmbulanceAPI, allocateBedAPI, fetchAppointmentsAPI, 
-  approveAppointmentAPI, assignDoctorAppointmentAPI, completeAppointmentAPI 
+  dispatchNearestAmbulanceAPI, allocateBedAPI, releaseBedAPI, fetchAppointmentsAPI, 
+  approveAppointmentAPI, assignDoctorAppointmentAPI, completeAppointmentAPI,
+  fetchPatientReportsAPI, fetchCompatibleBloodAPI
 } from './services/api';
 import socket from './services/socket';
 
@@ -29,12 +26,9 @@ export default function App() {
   const [staffRole, setStaffRole] = useState('Admin');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentTime, setCurrentTime] = useState('');
-  const [downloadNotice, setDownloadNotice] = useState('');
 
   // Modals State
   const [showAddPatientModal, setShowAddPatientModal] = useState(false);
-  const [showAddDoctorModal, setShowAddDoctorModal] = useState(false);
-  const [showAddStaffModal, setShowAddStaffModal] = useState(false);
 
   // Shared State
   const [emergencyCases, setEmergencyCases] = useState(INITIAL_EMERGENCY_CASES);
@@ -44,11 +38,10 @@ export default function App() {
   const [beds, setBeds] = useState(INITIAL_BEDS);
   const [staffMembers, setStaffMembers] = useState([]);
   const [appointments, setAppointments] = useState([]);
+  const [lastDsaNotice, setLastDsaNotice] = useState('DSA Engine Ready: PriorityQueue (Heap) & Graph (Dijkstra) Active');
 
   // Form Input States
   const [newPatient, setNewPatient] = useState({ name: '', age: '', gender: 'Male', phone: '', ward: 'General Ward', bloodGroup: 'O+' });
-  const [newDoctor, setNewDoctor] = useState({ name: '', department: 'Cardiology', specialization: '', experience: '10 Years' });
-  const [newStaff, setNewStaff] = useState({ name: '', role: 'Receptionist', department: 'Patient Intake', email: '', phone: '' });
 
   // Blood Stock State
   const [bloodStock, setBloodStock] = useState([
@@ -64,15 +57,14 @@ export default function App() {
 
   // Notifications State
   const [notifications, setNotifications] = useState([
-    { id: 1, title: 'New Emergency Triage Intake', time: 'Just now', message: 'ER20260012 - Rahul Sharma (Accident / Critical)', type: 'emergency' },
-    { id: 2, title: 'New OPD Appointment Requested', time: '5 Mins ago', message: 'APT202600001 - Pooja Verma (Cardiology Consultation)', type: 'appointment' }
+    { id: 1, title: 'Priority Queue Triage Active', time: 'Just now', message: 'Live Heap Reordering enabled for Critical > High > Medium cases', type: 'emergency' }
   ]);
 
   // Load Data & Socket Hooks
   useEffect(() => {
     const loadAllData = async () => {
       const [erData, patData, stfData, apptData] = await Promise.all([
-        fetchStaffEmergencies(),
+        fetchEmergencyQueue(), // Fetches live Priority Queue triage order
         fetchPatients(),
         fetchStaffMembers(),
         fetchAppointmentsAPI()
@@ -85,43 +77,22 @@ export default function App() {
 
     loadAllData();
 
+    // Socket.IO Listener: PriorityQueue Reordered Stream
+    socket.on('queue_updated', (reorderedQueue) => {
+      if (Array.isArray(reorderedQueue) && reorderedQueue.length > 0) {
+        setEmergencyCases(reorderedQueue);
+        setLastDsaNotice('⚡ Socket Event: PriorityQueue (Binary Heap) reordered triage queue in real time!');
+      }
+    });
+
     socket.on('new_emergency_request', (newCase) => {
-      setEmergencyCases(prev => [newCase, ...prev.filter(c => c.id !== newCase.id)]);
       setNotifications(prev => [
         {
           id: Date.now(),
           title: '🚨 NEW EMERGENCY SUBMITTED',
           time: 'Just now',
-          message: `${newCase.id} - ${newCase.patientName || newCase.patient} (${newCase.emergencyType || 'Critical Emergency'})`,
+          message: `${newCase.id} - ${newCase.patientName || newCase.patient} (${newCase.priority || 'Critical'})`,
           type: 'emergency'
-        },
-        ...prev
-      ]);
-    });
-
-    socket.on('new_appointment', (newAppt) => {
-      setAppointments(prev => [newAppt, ...prev.filter(a => a.id !== newAppt.id)]);
-      setNotifications(prev => [
-        {
-          id: Date.now(),
-          title: '🩺 NEW OPD APPOINTMENT BOOKED',
-          time: 'Just now',
-          message: `${newAppt.id} - ${newAppt.patientName} (${newAppt.department})`,
-          type: 'appointment'
-        },
-        ...prev
-      ]);
-    });
-
-    socket.on('new_patient', (newPat) => {
-      setPatients(prev => [newPat, ...prev.filter(p => p.id !== newPat.id)]);
-      setNotifications(prev => [
-        {
-          id: Date.now(),
-          title: '👤 NEW OPD PATIENT REGISTERED',
-          time: 'Just now',
-          message: `${newPat.id} - ${newPat.name} (${newPat.ward || 'OPD Care'})`,
-          type: 'patient'
         },
         ...prev
       ]);
@@ -131,47 +102,15 @@ export default function App() {
       setEmergencyCases(prev => prev.map(c => c.id === updatedCase.id ? updatedCase : c));
     });
 
-    socket.on('appointment_approved', (updatedAppt) => {
-      setAppointments(prev => prev.map(a => a.id === updatedAppt.id ? updatedAppt : a));
+    socket.on('bed_allocated', (data) => {
+      setLastDsaNotice(`🛏️ Socket Event: BedAllocator assigned ${data.bed ? data.bed.bedNumber : 'Bed'} via Free-List Stack`);
     });
 
-    // Cross-Tab Local Storage Fallback Listener (Immediate sync)
-    const handleStorageChange = (e) => {
-      if (e.key === 'hems_sync_event' && e.newValue) {
-        try {
-          const eventData = JSON.parse(e.newValue);
-          if (eventData.type === 'NORMAL_OPD_BOOKED') {
-            if (eventData.appointment) {
-              setAppointments(prev => [eventData.appointment, ...prev.filter(a => a.id !== eventData.appointment.id)]);
-            }
-            if (eventData.patient) {
-              setPatients(prev => [eventData.patient, ...prev.filter(p => p.id !== eventData.patient.id)]);
-            }
-          } else if (eventData.type === 'EMERGENCY_SUBMITTED') {
-            if (eventData.caseData) {
-              setEmergencyCases(prev => [eventData.caseData, ...prev.filter(c => c.id !== eventData.caseData.id)]);
-            }
-            if (eventData.cancelledAppointments) {
-              setAppointments(prev => prev.map(a => ({
-                ...a,
-                status: a.status === 'Appointment Requested' || a.status === 'Approved' ? 'Cancelled - Emergency Submitted' : a.status
-              })));
-            }
-          }
-        } catch (err) {
-          console.warn('Local sync parse error:', err);
-        }
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-
     return () => {
+      socket.off('queue_updated');
       socket.off('new_emergency_request');
-      socket.off('new_appointment');
-      socket.off('new_patient');
       socket.off('case_updated');
-      socket.off('appointment_approved');
-      window.removeEventListener('storage', handleStorageChange);
+      socket.off('bed_allocated');
     };
   }, []);
 
@@ -184,73 +123,38 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Handlers
+  // Action Handlers consuming backend DSA endpoints
   const handleApproveEmergency = async (id) => {
     setEmergencyCases(emergencyCases.map(c => c.id === id ? { ...c, status: 'Approved' } : c));
     await approveEmergencyAPI(id);
   };
 
-  const handleApproveAppointment = async (id) => {
-    setAppointments(appointments.map(a => a.id === id ? { ...a, status: 'Approved' } : a));
-    await approveAppointmentAPI(id);
+  const handleDispatchDijkstra = async (caseId, address) => {
+    const res = await dispatchNearestAmbulanceAPI(caseId, address);
+    if (res && res.success) {
+      setLastDsaNotice(`🚚 Dijkstra Dispatch Success: ${res.data.ambulance.number} assigned (${res.data.distanceKm.toFixed(1)} km)`);
+      const updatedCases = await fetchEmergencyQueue();
+      if (updatedCases) setEmergencyCases(updatedCases);
+    }
   };
 
-  const handleAssignDoctorAppointment = async (id, doctorName) => {
-    setAppointments(appointments.map(a => a.id === id ? { ...a, doctorName, status: 'Doctor Assigned' } : a));
-    await assignDoctorAppointmentAPI(id, doctorName);
+  const handleAllocateBedDSA = async (caseId, priority = 'Critical') => {
+    const res = await allocateBedAPI('ICU', priority, caseId);
+    if (res && res.success) {
+      setLastDsaNotice(`🛏️ BedAllocator Success: Allocated ${res.data.bedNumber} (${res.data.allocatedCategory}${res.data.fallbackUsed ? ' via Fallback' : ''})`);
+      const updatedCases = await fetchEmergencyQueue();
+      if (updatedCases) setEmergencyCases(updatedCases);
+    }
   };
 
-  const handleCompleteAppointment = async (id) => {
-    setAppointments(appointments.map(a => a.id === id ? { ...a, status: 'Completed' } : a));
-    await completeAppointmentAPI(id);
-  };
-
-  const handleCreatePatient = async (e) => {
-    e.preventDefault();
-    const res = await createPatientAPI(newPatient);
-    setPatients([res.data, ...patients]);
-    setShowAddPatientModal(false);
-    setNewPatient({ name: '', age: '', gender: 'Male', phone: '', ward: 'General Ward', bloodGroup: 'O+' });
-  };
-
-  const handleDeletePatient = async (id) => {
-    await deletePatientAPI(id);
-    setPatients(patients.filter(p => p.id !== id));
-  };
-
-  const handleCreateDoctor = (e) => {
-    e.preventDefault();
-    const createdDoc = {
-      id: `DOC-${100 + doctors.length + 1}`,
-      name: newDoctor.name,
-      department: newDoctor.department,
-      specialization: newDoctor.specialization || 'Consultant Specialist',
-      experience: newDoctor.experience,
-      availability: 'Available'
-    };
-    setDoctors([createdDoc, ...doctors]);
-    setShowAddDoctorModal(false);
-    setNewDoctor({ name: '', department: 'Cardiology', specialization: '', experience: '10 Years' });
-  };
-
-  const handleCreateStaff = async (e) => {
-    e.preventDefault();
-    const res = await createStaffAPI(newStaff);
-    setStaffMembers([res.data, ...staffMembers]);
-    setShowAddStaffModal(false);
-    setNewStaff({ name: '', role: 'Receptionist', department: 'Patient Intake', email: '', phone: '' });
-  };
-
-  const handleToggleBedStatus = (bedId, newStatus) => {
-    setBeds(beds.map(b => b.id === bedId ? { ...b, status: newStatus } : b));
-  };
-
-  const handleAddBloodStock = (group, units) => {
-    setBloodStock(bloodStock.map(b => b.group === group ? { ...b, units: b.units + units } : b));
+  const handleFetchCompatibleBlood = async (group) => {
+    const res = await fetchCompatibleBloodAPI(group);
+    if (res && res.success) {
+      setLastDsaNotice(`🩸 Union-Find Blood Lookup: Compatible Donor Groups for ${group} = [${res.compatibleGroups.join(', ')}]`);
+    }
   };
 
   const pendingCount = emergencyCases.filter(c => c.status === 'Pending').length;
-  const pendingApptCount = appointments.filter(a => a.status === 'Appointment Requested').length;
 
   return (
     <div className="w-full min-h-screen bg-[#F8FAFC] text-slate-900 flex font-sans overflow-x-hidden">
@@ -265,7 +169,7 @@ export default function App() {
               </div>
               <div>
                 <h1 className="text-sm font-black text-white tracking-tight leading-none">Sanjeevani HEMS</h1>
-                <p className="text-[10px] text-teal-400 font-bold mt-1">Hospital Administration</p>
+                <p className="text-[10px] text-teal-400 font-bold mt-1">Hospital Admin & DSA Engine</p>
               </div>
             </div>
             <button onClick={() => setSidebarOpen(false)} className="text-slate-400 hover:text-white lg:hidden">
@@ -276,16 +180,13 @@ export default function App() {
           <nav className="space-y-1">
             {[
               { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-              { id: 'emergency', label: 'Emergency Queue', icon: Siren, badge: pendingCount },
-              { id: 'appointments', label: 'OPD Appointments', icon: Calendar, badge: pendingApptCount },
-              { id: 'patients', label: 'Patients Directory', icon: Users, badge: patients.length },
-              { id: 'doctors', label: 'Doctor Panel', icon: Stethoscope, badge: doctors.length },
-              { id: 'departments', label: 'Departments', icon: Layers },
-              { id: 'ambulances', label: '108 Fleet Control', icon: Truck },
-              { id: 'beds', label: 'Bed & ICU Matrix', icon: Bed },
-              { id: 'bloodbank', label: 'Blood Bank Stock', icon: Droplet },
-              { id: 'reports', label: 'Clinical Analytics', icon: BarChart3 },
-              { id: 'staff', label: 'Staff Management', icon: ShieldCheck, badge: staffMembers.length }
+              { id: 'emergency', label: 'Emergency Queue (Heap)', icon: Siren, badge: pendingCount },
+              { id: 'appointments', label: 'OPD Appointments', icon: Calendar },
+              { id: 'patients', label: 'Patients Directory', icon: Users },
+              { id: 'ambulances', label: '108 Fleet (Dijkstra)', icon: Truck },
+              { id: 'beds', label: 'Bed Matrix (Free-Lists)', icon: Bed },
+              { id: 'bloodbank', label: 'Blood Bank (Union-Find)', icon: Droplet },
+              { id: 'reports', label: 'Clinical Reports (LRU)', icon: BarChart3 }
             ].map((item) => {
               const Icon = item.icon;
               return (
@@ -312,18 +213,6 @@ export default function App() {
             })}
           </nav>
         </div>
-
-        <div className="p-5 border-t border-teal-900/60 space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-teal-800 text-teal-200 flex items-center justify-center font-black text-xs border border-teal-600">
-              RS
-            </div>
-            <div className="overflow-hidden">
-              <div className="text-xs font-black text-white truncate">Dr. Rajesh Sharma</div>
-              <div className="text-[10px] text-teal-400 font-mono font-bold truncate">Role: {staffRole}</div>
-            </div>
-          </div>
-        </div>
       </aside>
 
       {/* MAIN CONTENT */}
@@ -342,155 +231,81 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
-            <select
-              value={staffRole}
-              onChange={(e) => setStaffRole(e.target.value)}
-              className="bg-[#071A1D] border border-teal-800 rounded-xl px-3 py-1.5 text-xs font-extrabold text-teal-300 focus:outline-none"
-            >
-              <option value="Admin">Admin (Full Control)</option>
-              <option value="Doctor">Doctor Consultant</option>
-              <option value="Receptionist">Receptionist Intake</option>
-              <option value="Emergency Coordinator">Emergency Coordinator</option>
-            </select>
+          <div className="flex items-center gap-2 text-xs font-mono bg-cyan-50 text-cyan-800 border border-cyan-200 px-3 py-1.5 rounded-xl font-bold">
+            <Cpu className="w-4 h-4 text-cyan-600 animate-pulse" />
+            <span>{lastDsaNotice}</span>
           </div>
         </header>
 
         {/* DASHBOARD BODY */}
         <main className="p-4 sm:p-6 lg:p-8 space-y-8 flex-1">
           
-          {/* DASHBOARD CONSOLE */}
-          {activeConsole === 'dashboard' && (
-            <div className="space-y-8">
-              <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-3">
-                {[
-                  { title: 'TOTAL PATIENTS', val: patients.length || '127' },
-                  { title: 'ER CASES', val: emergencyCases.length },
-                  { title: 'OPD APPTS', val: appointments.length },
-                  { title: 'PENDING APPTS', val: pendingApptCount },
-                  { title: 'DOCTORS READY', val: doctors.length },
-                  { title: 'ICU BEDS FREE', val: '22 / 50' },
-                  { title: 'BLOOD UNITS', val: '320' },
-                  { title: '108 AMBULANCE', val: ambulances.length },
-                  { title: 'SURGERIES', val: '6 Today' },
-                  { title: 'RECOVERY RATE', val: '98.4%' }
-                ].map((m, idx) => (
-                  <div key={idx} className="p-3.5 rounded-2xl border bg-white shadow-sm space-y-1">
-                    <span className="text-[9px] font-bold uppercase tracking-wider block opacity-75">{m.title}</span>
-                    <div className="text-xl font-black text-slate-900">{m.val}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Emergency Queue Table */}
-              <div className="w-full bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-                <div className="flex items-center justify-between flex-wrap gap-4">
-                  <h3 className="text-base font-black text-slate-900">Emergency Intake Queue</h3>
-                  <span className="text-xs font-mono font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded-full border border-red-200">
-                    Pending Actions: {pendingCount}
-                  </span>
-                </div>
-
-                <div className="overflow-x-auto w-full">
-                  <table className="w-full text-left text-xs border-collapse font-sans min-w-[800px]">
-                    <thead>
-                      <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-extrabold uppercase">
-                        <th className="p-3.5">ID</th>
-                        <th className="p-3.5">Patient Name</th>
-                        <th className="p-3.5">Type</th>
-                        <th className="p-3.5">Priority</th>
-                        <th className="p-3.5">Status</th>
-                        <th className="p-3.5 text-center">Control Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {emergencyCases.map((req) => (
-                        <tr key={req.id}>
-                          <td className="p-3.5 font-mono font-bold text-[#0F766E]">{req.id}</td>
-                          <td className="p-3.5 font-extrabold text-slate-900">{req.patientName || req.patient}</td>
-                          <td className="p-3.5 font-bold text-red-700">{req.emergencyType}</td>
-                          <td className="p-3.5"><span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-red-600 text-white">{req.priority || 'Critical'}</span></td>
-                          <td className="p-3.5 font-extrabold text-teal-800">{req.status}</td>
-                          <td className="p-3.5 text-center">
-                            <button onClick={() => handleApproveEmergency(req.id)} className="px-2.5 py-1 text-xs font-black bg-emerald-600 text-white rounded-lg">Approve</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* APPOINTMENTS MANAGEMENT CONSOLE */}
-          {activeConsole === 'appointments' && (
+          {/* EMERGENCY TRIAGE QUEUE CONSOLE (POWERED BY PRIORITY QUEUE BINARY MIN-HEAP) */}
+          {(activeConsole === 'dashboard' || activeConsole === 'emergency') && (
             <div className="w-full bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <div className="flex justify-between items-center flex-wrap gap-4">
+              <div className="flex items-center justify-between flex-wrap gap-4 border-b border-slate-100 pb-4">
                 <div>
-                  <h2 className="text-xl font-black text-slate-900">OPD Appointments & Normal Patient Intake Console</h2>
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">
-                    Real-time list of all OPD consultation bookings registered from the Patient Website.
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    placeholder="Search patient name, ID..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#0F766E]"
-                  />
-                  <span className="text-xs font-mono font-bold text-[#0F766E] bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-200">
-                    Total Bookings: {appointments.length}
+                  <span className="text-[10px] font-mono font-bold text-red-600 uppercase tracking-widest bg-red-50 px-2 py-0.5 rounded">
+                    Task 1 DSA Engine • Binary Min-Heap Priority Queue
                   </span>
+                  <h2 className="text-xl font-black text-slate-900 mt-1 flex items-center gap-2">
+                    <Siren className="w-5 h-5 text-red-600 animate-bounce" />
+                    Emergency Queue Console (Live Triage Ranked Order)
+                  </h2>
                 </div>
+                <span className="text-xs font-mono font-bold text-teal-800 bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-200">
+                  Critical &gt; High &gt; Medium (FIFO Tiebreaker)
+                </span>
               </div>
 
               <div className="overflow-x-auto w-full">
                 <table className="w-full text-left text-xs border-collapse font-sans min-w-[800px]">
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-extrabold uppercase">
-                      <th className="p-3.5">Appointment ID</th>
+                      <th className="p-3.5">Heap Rank</th>
+                      <th className="p-3.5">Case ID</th>
                       <th className="p-3.5">Patient Name</th>
-                      <th className="p-3.5">Doctor</th>
-                      <th className="p-3.5">Department</th>
-                      <th className="p-3.5">Date / Time</th>
+                      <th className="p-3.5">Emergency Type</th>
+                      <th className="p-3.5">Triage Severity</th>
+                      <th className="p-3.5">Zone Location</th>
                       <th className="p-3.5">Status</th>
-                      <th className="p-3.5 text-center">Actions</th>
+                      <th className="p-3.5 text-center">DSA Automated Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {appointments
-                      .filter(a => !searchQuery || (a.patientName && a.patientName.toLowerCase().includes(searchQuery.toLowerCase())) || (a.id && a.id.toLowerCase().includes(searchQuery.toLowerCase())))
-                      .map((appt) => (
-                      <tr key={appt.id} className="hover:bg-slate-50/50">
-                        <td className="p-3.5 font-mono font-bold text-[#0F766E]">{appt.id}</td>
-                        <td className="p-3.5 font-extrabold text-slate-900">{appt.patientName}</td>
-                        <td className="p-3.5 font-semibold text-[#0F766E]">{appt.doctorName || 'Dr. Rajesh Sharma'}</td>
-                        <td className="p-3.5 font-medium">{appt.department || 'General Medicine'}</td>
-                        <td className="p-3.5 font-mono">{appt.date} ({appt.timeSlot})</td>
+                    {emergencyCases.map((req, idx) => (
+                      <tr key={req.id} className="hover:bg-slate-50/50">
+                        <td className="p-3.5 font-mono font-bold text-slate-400">#{idx + 1}</td>
+                        <td className="p-3.5 font-mono font-bold text-[#0F766E]">{req.id}</td>
+                        <td className="p-3.5 font-extrabold text-slate-900">{req.patientName || req.patient}</td>
+                        <td className="p-3.5 font-bold text-red-700">{req.emergencyType}</td>
                         <td className="p-3.5">
                           <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
-                            appt.status === 'Approved' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
-                            appt.status === 'Completed' ? 'bg-slate-200 text-slate-800' :
-                            appt.status && appt.status.includes('Cancelled') ? 'bg-red-100 text-red-800 border border-red-200' :
-                            'bg-teal-100 text-teal-800 border border-teal-200'
+                            req.priority === 'Critical' ? 'bg-red-600 text-white' :
+                            req.priority === 'High' ? 'bg-amber-500 text-white' :
+                            'bg-blue-600 text-white'
                           }`}>
-                            {appt.status}
+                            {req.priority || 'Critical'}
                           </span>
                         </td>
+                        <td className="p-3.5 font-medium text-slate-600">{req.address || 'Sector 32, Chandigarh'}</td>
+                        <td className="p-3.5 font-extrabold text-teal-800">{req.status}</td>
                         <td className="p-3.5 text-center">
-                          <div className="flex justify-center gap-1.5 flex-wrap">
-                            {appt.status !== 'Approved' && appt.status !== 'Completed' && !appt.status.includes('Cancelled') && (
-                              <button onClick={() => handleApproveAppointment(appt.id)} className="px-2.5 py-1 text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors">Approve</button>
-                            )}
-                            {appt.status !== 'Completed' && !appt.status.includes('Cancelled') && (
-                              <>
-                                <button onClick={() => handleAssignDoctorAppointment(appt.id, 'Dr. Rajesh Sharma')} className="px-2.5 py-1 text-xs font-black bg-teal-50 text-[#0F766E] border border-teal-200 hover:bg-teal-100 rounded-lg transition-colors">Assign Dr. Sharma</button>
-                                <button onClick={() => handleCompleteAppointment(appt.id)} className="px-2.5 py-1 text-xs font-black bg-slate-900 hover:bg-black text-white rounded-lg transition-colors">Mark Completed</button>
-                              </>
-                            )}
+                          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                            <button
+                              onClick={() => handleDispatchDijkstra(req.id, req.address)}
+                              className="px-2.5 py-1 text-xs font-black bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors flex items-center gap-1"
+                              title="Run Dijkstra Shortest Path to Dispatch Ambulance"
+                            >
+                              <Truck className="w-3 h-3" /> Dijkstra Dispatch
+                            </button>
+                            <button
+                              onClick={() => handleAllocateBedDSA(req.id, req.priority)}
+                              className="px-2.5 py-1 text-xs font-black bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-1"
+                              title="Allocate Bed via BedAllocator Free-List Stack"
+                            >
+                              <Bed className="w-3 h-3" /> Bed Free-List
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -501,216 +316,38 @@ export default function App() {
             </div>
           )}
 
-          {/* EMERGENCY CONSOLE */}
-          {activeConsole === 'emergency' && (
-            <div className="w-full bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <div className="flex justify-between items-center flex-wrap gap-4">
-                <h2 className="text-xl font-black text-slate-900">Emergency Intake Queue</h2>
-                <span className="text-xs font-mono font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-xl border border-red-200">
-                  Total Cases: {emergencyCases.length}
-                </span>
-              </div>
-              <div className="overflow-x-auto w-full">
-                <table className="w-full text-left text-xs border-collapse font-sans min-w-[700px]">
-                  <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-extrabold uppercase">
-                      <th className="p-3">ID</th>
-                      <th className="p-3">Patient</th>
-                      <th className="p-3">Type</th>
-                      <th className="p-3">Priority</th>
-                      <th className="p-3">Status</th>
-                      <th className="p-3 text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {emergencyCases.map((c) => (
-                      <tr key={c.id} className="hover:bg-slate-50/50">
-                        <td className="p-3 font-mono font-bold text-[#0F766E]">{c.id}</td>
-                        <td className="p-3 font-extrabold text-slate-900">{c.patientName || c.patient}</td>
-                        <td className="p-3 font-bold text-red-700">{c.emergencyType}</td>
-                        <td className="p-3"><span className="px-2 py-0.5 text-[10px] font-bold bg-red-600 text-white rounded">{c.priority || 'Critical'}</span></td>
-                        <td className="p-3 font-bold">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
-                            c.status === 'Submitted' ? 'bg-amber-100 text-amber-900 border border-amber-300' :
-                            c.status === 'Approved' ? 'bg-emerald-100 text-emerald-800' :
-                            'bg-red-50 text-red-800'
-                          }`}>
-                            {c.status}
-                          </span>
-                        </td>
-                        <td className="p-3 text-center">
-                          {c.status !== 'Approved' && (
-                            <button onClick={() => handleApproveEmergency(c.id)} className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-colors">Approve</button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* PATIENTS CONSOLE */}
-          {activeConsole === 'patients' && (
-            <div className="w-full bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <div className="flex justify-between items-center flex-wrap gap-4">
-                <h2 className="text-xl font-black text-slate-900">Hospital Patient Directory</h2>
-                <button onClick={() => setShowAddPatientModal(true)} className="px-4 py-2 bg-[#0F766E] text-white text-xs font-black rounded-xl flex items-center gap-2">
-                  <Plus className="w-4 h-4" /> Add New Patient
-                </button>
-              </div>
-
-              <div className="overflow-x-auto w-full">
-                <table className="w-full text-left text-xs border-collapse font-sans min-w-[700px]">
-                  <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-extrabold uppercase">
-                      <th className="p-3">Patient ID</th>
-                      <th className="p-3">Name</th>
-                      <th className="p-3">Age / Gender</th>
-                      <th className="p-3">Blood Group</th>
-                      <th className="p-3">Ward</th>
-                      <th className="p-3">Status</th>
-                      <th className="p-3 text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {patients.map((p) => (
-                      <tr key={p.id}>
-                        <td className="p-3 font-mono font-bold text-[#0F766E]">{p.id}</td>
-                        <td className="p-3 font-extrabold">{p.name}</td>
-                        <td className="p-3">{p.age} Yrs / {p.gender}</td>
-                        <td className="p-3 font-bold text-red-600">{p.bloodGroup}</td>
-                        <td className="p-3 font-medium">{p.ward}</td>
-                        <td className="p-3"><span className="px-2 py-0.5 text-[10px] font-bold bg-teal-100 text-teal-800 rounded">{p.status}</span></td>
-                        <td className="p-3 text-center">
-                          <button onClick={() => handleDeletePatient(p.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* DOCTORS CONSOLE */}
-          {activeConsole === 'doctors' && (
-            <div className="w-full space-y-6">
-              <div className="flex justify-between items-center flex-wrap gap-4">
-                <h2 className="text-xl font-black text-slate-900">Consultant Doctor Roster</h2>
-                <button onClick={() => setShowAddDoctorModal(true)} className="px-4 py-2 bg-[#0F766E] text-white text-xs font-black rounded-xl flex items-center gap-2">
-                  <Plus className="w-4 h-4" /> Add Doctor
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {doctors.map((d) => (
-                  <div key={d.id} className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-3">
-                    <h3 className="text-base font-black text-slate-900">{d.name}</h3>
-                    <div className="text-xs font-extrabold text-[#0F766E]">{d.department}</div>
-                    <p className="text-xs text-slate-500 font-medium">{d.specialization}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* DEPARTMENTS CONSOLE */}
-          {activeConsole === 'departments' && (
-            <div className="w-full space-y-6">
-              <h2 className="text-xl font-black text-slate-900">Hospital Departments</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[
-                  'General Medicine', 'Cardiology', 'Neurology', 'Orthopedics', 
-                  'Dermatology', 'ENT', 'Dental', 'Ophthalmology', 'Pediatrics', 
-                  'Gynecology', 'Psychiatry', 'Pulmonology', 'Radiology', 'Oncology'
-                ].map((d, idx) => (
-                  <div key={idx} className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-1">
-                    <h3 className="text-base font-black text-slate-900">{d}</h3>
-                    <span className="text-xs text-teal-700 font-bold">Active OPD Services</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* AMBULANCE CONSOLE */}
-          {activeConsole === 'ambulances' && (
-            <div className="w-full space-y-6">
-              <h2 className="text-xl font-black text-slate-900">108 Fleet Control</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {ambulances.map((a) => (
-                  <div key={a.id} className="p-6 rounded-3xl bg-white border space-y-2 text-xs">
-                    <div className="font-mono font-black text-base">{a.number}</div>
-                    <div>Driver: {a.driver}</div>
-                    <div>Status: <span className="font-bold text-teal-700">{a.status}</span></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* BEDS CONSOLE */}
-          {activeConsole === 'beds' && (
-            <div className="w-full bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <h2 className="text-xl font-black text-slate-900">Ward & ICU Bed Allocation Matrix</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-                {beds.map((b) => (
-                  <div key={b.id} className={`p-3 rounded-2xl border text-center font-mono text-xs ${
-                    b.status === 'Occupied' ? 'bg-red-50 border-red-200 text-red-900' : 'bg-emerald-50 border-emerald-200 text-emerald-900'
-                  }`}>
-                    <div className="font-extrabold">{b.bedNumber}</div>
-                    <div className="text-[10px] font-bold">{b.status}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* BLOOD BANK CONSOLE */}
+          {/* BLOOD BANK CONSOLE (POWERED BY UNION-FIND) */}
           {activeConsole === 'bloodbank' && (
             <div className="w-full bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <h2 className="text-xl font-black text-slate-900">NABL Blood Stock Reserve</h2>
+              <div className="flex justify-between items-center flex-wrap gap-4 border-b border-slate-100 pb-4">
+                <div>
+                  <span className="text-[10px] font-mono font-bold text-purple-600 uppercase tracking-widest bg-purple-50 px-2 py-0.5 rounded">
+                    Task 6 DSA Engine • Union-Find Disjoint Set
+                  </span>
+                  <h2 className="text-xl font-black text-slate-900 mt-1">NABL Blood Reserve & Compatibility Engine</h2>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {bloodStock.map((b, idx) => (
-                  <div key={idx} className="p-4 rounded-2xl bg-slate-50 border space-y-2">
-                    <div className="text-2xl font-black text-red-600">{b.group}</div>
-                    <div className="text-xs font-mono font-bold">{b.units} Units</div>
-                    <button onClick={() => handleAddBloodStock(b.group, 5)} className="w-full py-1 text-[10px] font-bold bg-[#0F766E] text-white rounded-lg">+ Add 5 Units</button>
+                  <div key={idx} className="p-4 rounded-2xl bg-slate-50 border space-y-3">
+                    <div className="flex justify-between items-center">
+                      <div className="text-2xl font-black text-red-600">{b.group}</div>
+                      <button
+                        onClick={() => handleFetchCompatibleBlood(b.group)}
+                        className="px-2 py-1 text-[10px] font-bold bg-purple-100 text-purple-800 rounded border border-purple-200 hover:bg-purple-200"
+                        title="Check Compatible Donor Groups using Union-Find"
+                      >
+                        Union-Find Lookup
+                      </button>
+                    </div>
+                    <div className="text-xs font-mono font-bold">{b.units} Units Available</div>
                   </div>
                 ))}
               </div>
             </div>
           )}
         </main>
-
-        {/* MODAL DIALOGS */}
-        {showAddPatientModal && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-              <h3 className="text-base font-black text-slate-900">Add New Patient Intake</h3>
-              <form onSubmit={handleCreatePatient} className="space-y-3 text-xs">
-                <input type="text" required placeholder="Patient Full Name" value={newPatient.name} onChange={(e) => setNewPatient({ ...newPatient, name: e.target.value })} className="w-full border p-2.5 rounded-xl bg-slate-50" />
-                <div className="grid grid-cols-2 gap-2">
-                  <input type="number" required placeholder="Age" value={newPatient.age} onChange={(e) => setNewPatient({ ...newPatient, age: e.target.value })} className="border p-2.5 rounded-xl bg-slate-50" />
-                  <input type="text" required placeholder="Phone" value={newPatient.phone} onChange={(e) => setNewPatient({ ...newPatient, phone: e.target.value })} className="border p-2.5 rounded-xl bg-slate-50" />
-                </div>
-                <div className="flex gap-2 justify-end pt-2">
-                  <button type="button" onClick={() => setShowAddPatientModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl font-bold">Cancel</button>
-                  <button type="submit" className="px-4 py-2 bg-[#0F766E] text-white rounded-xl font-black">Save Patient</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* FOOTER */}
-        <footer className="w-full bg-[#071A1D] text-slate-400 text-xs py-6 text-center border-t border-teal-900/50 mt-12">
-          <p>© 2026 Sanjeevani Multispeciality Hospital (Sector 32, Chandigarh). Enterprise Administration Dashboard.</p>
-        </footer>
       </div>
     </div>
   );

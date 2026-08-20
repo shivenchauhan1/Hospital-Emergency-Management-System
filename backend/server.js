@@ -6,6 +6,12 @@ const { Server } = require('socket.io');
 const connectDB = require('./config/db');
 const seedHospitalData = require('./config/seed');
 
+// Custom DSA Hydration
+const CaseCache = require('./dsa/CaseCache');
+const { bedAllocatorInstance } = require('./controllers/bedController');
+const EmergencyCase = require('./models/EmergencyCase');
+const Bed = require('./models/Bed');
+
 const app = express();
 const server = http.createServer(app);
 
@@ -22,9 +28,23 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
-// Initialize Database Connection & Seed Data
-connectDB().then(() => {
-  seedHospitalData();
+// Initialize Database Connection, Seed Data & Hydrate DSA Caches
+connectDB().then(async () => {
+  await seedHospitalData();
+
+  try {
+    // 1. Hydrate O(1) CaseCache Hashmap from MongoDB
+    const allCases = await EmergencyCase.find();
+    CaseCache.hydrate(allCases);
+    console.log(`⚡ CaseCache hydrated with ${CaseCache.size()} emergency cases`);
+
+    // 2. Hydrate BedAllocator Free-Lists from MongoDB
+    const allBeds = await Bed.find();
+    bedAllocatorInstance.hydrate(allBeds);
+    console.log(`🛏️ BedAllocator hydrated free-lists:`, bedAllocatorInstance.getFreeCounts());
+  } catch (err) {
+    console.error('❌ Error hydrating DSA Data Structures:', err.message);
+  }
 });
 
 // API Routes Injection
@@ -34,7 +54,7 @@ const createAppointmentRoutes = require('./routes/appointmentRoutes');
 const doctorRoutes = require('./routes/doctorRoutes');
 const departmentRoutes = require('./routes/departmentRoutes');
 const ambulanceRoutes = require('./routes/ambulanceRoutes');
-const bedRoutes = require('./routes/bedRoutes');
+const createBedRoutes = require('./routes/bedRoutes');
 const bloodRoutes = require('./routes/bloodRoutes');
 const createPatientRoutes = require('./routes/patientRoutes');
 const staffRoutes = require('./routes/staffRoutes');
@@ -45,7 +65,7 @@ app.use('/api/appointment', createAppointmentRoutes(io));
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/ambulances', ambulanceRoutes);
-app.use('/api/beds', bedRoutes);
+app.use('/api/beds', createBedRoutes(io));
 app.use('/api/blood', bloodRoutes);
 app.use('/api/patient', createPatientRoutes(io));
 app.use('/api/patients', createPatientRoutes(io));
@@ -55,22 +75,16 @@ app.use('/api/staff', staffRoutes);
 app.get('/', (req, res) => {
   res.json({
     status: "Active",
-    server: "Sanjeevani Multispeciality Hospital Backend API",
+    server: "Sanjeevani Multispeciality Hospital Backend API with Custom DSA Engine",
     location: "Sector 32, Chandigarh",
     socketEngine: "Socket.IO Real-Time Enabled",
-    endpoints: [
-      "GET /api/doctors",
-      "GET /api/departments",
-      "GET /api/ambulances",
-      "GET /api/beds",
-      "GET /api/blood",
-      "GET /api/emergency",
-      "POST /api/emergency",
-      "POST /api/patient/register",
-      "POST /api/appointment",
-      "GET /api/appointment",
-      "PUT /api/appointment/approve",
-      "PUT /api/appointment/assignDoctor"
+    dsaModules: [
+      "PriorityQueue (Binary Min-Heap Triage)",
+      "Graph + Dijkstra (Ambulance Route Optimization)",
+      "CaseCache (O(1) Hash Map Cache)",
+      "BedAllocator (Greedy Interval Free-List Stacks)",
+      "LRUCache (Doubly Linked List + Map Report Cache)",
+      "UnionFind (Disjoint-Set Blood Group Compatibility)"
     ]
   });
 });

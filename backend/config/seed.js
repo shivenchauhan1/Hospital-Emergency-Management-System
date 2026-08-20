@@ -6,6 +6,7 @@ const BloodInventory = require('../models/BloodInventory');
 const EmergencyCase = require('../models/EmergencyCase');
 const Patient = require('../models/Patient');
 const Staff = require('../models/Staff');
+const Report = require('../models/Report');
 
 const seedHospitalData = async () => {
   try {
@@ -64,15 +65,20 @@ const seedHospitalData = async () => {
       console.log('✅ Seeded 9 Departments');
     }
 
-    // Seed Ambulances
+    // Seed Ambulances with Zone Graph Mappings
     const ambCount = await Ambulance.countDocuments();
     if (ambCount === 0) {
       await Ambulance.insertMany([
-        { id: 'AMB-01', number: 'PB01AB1234', driver: 'Gurpreet Singh', phone: '+91 98765 11111', location: 'Sector 17 Plaza, Chandigarh', eta: '5 Mins', status: 'Available' },
-        { id: 'AMB-02', number: 'CH02CD5678', driver: 'Manjit Sharma', phone: '+91 98765 22222', location: 'Tribune Chowk, Chandigarh', eta: '8 Mins', status: 'On Route' },
-        { id: 'AMB-03', number: 'HR26XY1122', driver: 'Rajesh Saini', phone: '+91 98765 33333', location: 'Sector 32 Hospital Bay 1', eta: 'Immediate', status: 'Available' }
+        { id: 'AMB-01', number: 'PB01AB1234', driver: 'Gurpreet Singh', phone: '+91 98765 11111', location: 'Sector 17 Plaza, Chandigarh', zone: 'Sector 17', eta: '5 Mins', status: 'Available' },
+        { id: 'AMB-02', number: 'CH02CD5678', driver: 'Manjit Sharma', phone: '+91 98765 22222', location: 'Tribune Chowk, Chandigarh', zone: 'Tribune Chowk', eta: '8 Mins', status: 'Available' },
+        { id: 'AMB-03', number: 'HR26XY1122', driver: 'Rajesh Saini', phone: '+91 98765 33333', location: 'Sector 32 Hospital Bay 1', zone: 'Sector 32', eta: 'Immediate', status: 'Available' }
       ]);
-      console.log('✅ Seeded 3 108 Ambulances');
+      console.log('✅ Seeded 3 108 Ambulances with Zone Mappings');
+    } else {
+      // Ensure zone migration for existing ambulances
+      await Ambulance.updateOne({ id: 'AMB-01', zone: { $exists: false } }, { $set: { zone: 'Sector 17' } });
+      await Ambulance.updateOne({ id: 'AMB-02', zone: { $exists: false } }, { $set: { zone: 'Tribune Chowk' } });
+      await Ambulance.updateOne({ id: 'AMB-03', zone: { $exists: false } }, { $set: { zone: 'Sector 32' } });
     }
 
     // Seed Beds
@@ -102,6 +108,17 @@ const seedHospitalData = async () => {
         { group: 'O-', units: 8, status: 'Low Stock' }
       ]);
       console.log('✅ Seeded Blood Inventory Groups');
+    }
+
+    // Seed Diagnostic Patient Reports
+    const reportCount = await Report.countDocuments();
+    if (reportCount === 0) {
+      await Report.insertMany([
+        { reportId: 'RPT-1001', patientId: 'SAN-2026-1001', patientName: 'Rahul Sharma', reportType: 'MRI Brain Scan', doctor: 'Dr. Priya Mehta', fileUrl: '/uploads/mri_brain_1001.pdf', date: '2026-08-15' },
+        { reportId: 'RPT-1002', patientId: 'SAN-2026-1001', patientName: 'Rahul Sharma', reportType: 'Blood Test Lab Report', doctor: 'Dr. Rajesh Sharma', fileUrl: '/uploads/blood_1001.pdf', date: '2026-08-18' },
+        { reportId: 'RPT-1003', patientId: 'SAN-2026-1002', patientName: 'Pooja Verma', reportType: 'X-Ray Scan', doctor: 'Dr. Kavita Kapoor', fileUrl: '/uploads/xray_1002.pdf', date: '2026-08-19' }
+      ]);
+      console.log('✅ Seeded Patient Diagnostic Reports');
     }
 
     // Seed Emergency Cases

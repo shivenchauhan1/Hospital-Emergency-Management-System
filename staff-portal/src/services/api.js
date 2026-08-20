@@ -4,7 +4,7 @@ import {
   INITIAL_AMBULANCES, INITIAL_BEDS 
 } from '../data/hospitalStore';
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://hospital-emergency-management-system-1qmx.onrender.com/api';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -17,6 +17,17 @@ export const fetchStaffEmergencies = async () => {
     if (res.data && res.data.data && res.data.data.length > 0) return res.data.data;
   } catch (e) {
     console.warn('Backend API unavailable, returning seed emergency cases');
+  }
+  return INITIAL_EMERGENCY_CASES;
+};
+
+// PriorityQueue Live Triage Console Endpoint
+export const fetchEmergencyQueue = async () => {
+  try {
+    const res = await api.get('/emergency/queue');
+    if (res.data && res.data.data) return res.data.data;
+  } catch (e) {
+    console.warn('Backend Queue API unavailable, returning seed emergency cases');
   }
   return INITIAL_EMERGENCY_CASES;
 };
@@ -132,21 +143,52 @@ export const assignDoctorAPI = async (id, doctorName) => {
   }
 };
 
-export const dispatchAmbulanceAPI = async (id, ambulanceNumber) => {
+// Graph + Dijkstra Nearest Dispatch API
+export const dispatchNearestAmbulanceAPI = async (caseId, address) => {
   try {
-    const res = await api.put('/emergency/dispatchAmbulance', { id, ambulanceNumber });
+    const res = await api.post('/ambulances/dispatch', { caseId, address });
     return res.data;
   } catch (e) {
-    console.warn('Backend dispatchAmbulance failed');
+    console.warn('Backend dispatchNearestAmbulance failed');
   }
 };
 
-export const allocateBedAPI = async (id, bedNumber) => {
+// BedAllocator Greedy Free-List Allocation API
+export const allocateBedAPI = async (category = 'General', priority = 'Medium', caseId = null) => {
   try {
-    const res = await api.put('/emergency/allocateBed', { id, bedNumber });
+    const res = await api.post('/beds/allocate', { category, priority, caseId });
     return res.data;
   } catch (e) {
-    console.warn('Backend allocateBed failed');
+    console.warn('Backend BedAllocator allocate failed');
+  }
+};
+
+export const releaseBedAPI = async (bedId) => {
+  try {
+    const res = await api.post('/beds/release', { bedId });
+    return res.data;
+  } catch (e) {
+    console.warn('Backend releaseBed failed');
+  }
+};
+
+// LRUCache Diagnostic Reports API
+export const fetchPatientReportsAPI = async (patientId) => {
+  try {
+    const res = await api.get(`/patient/reports/${patientId}`);
+    return res.data;
+  } catch (e) {
+    console.warn('Backend fetchPatientReports failed');
+  }
+};
+
+// Union-Find Compatible Blood Stock API
+export const fetchCompatibleBloodAPI = async (group) => {
+  try {
+    const res = await api.get(`/blood/compatible/${group}`);
+    return res.data;
+  } catch (e) {
+    console.warn('Backend fetchCompatibleBlood failed');
   }
 };
 
