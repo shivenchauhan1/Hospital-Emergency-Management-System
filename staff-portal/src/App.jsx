@@ -5,14 +5,14 @@ import {
   FileText, Bell, Settings, LogOut, Menu, X, Clock, AlertTriangle, 
   PhoneCall, ChevronRight, UserPlus, FileCheck, Layers, RefreshCw, 
   Filter, Calendar, BarChart3, TrendingUp, Plus, Trash2, Edit3, Eye, 
-  CheckSquare, ShieldAlert, HeartPulse, Cpu, Sparkles 
+  CheckSquare, ShieldAlert, HeartPulse, Cpu, Sparkles, AlertCircle, Loader2
 } from 'lucide-react';
 import { 
   HOSPITAL_INFO, INITIAL_DOCTORS, INITIAL_EMERGENCY_CASES, 
   INITIAL_AMBULANCES, INITIAL_BEDS 
 } from './data/hospitalStore';
 import { 
-  fetchStaffEmergencies, fetchEmergencyQueue, fetchPatients, createPatientAPI, deletePatientAPI, 
+  warmupBackendAPI, fetchStaffEmergencies, fetchEmergencyQueue, fetchPatients, createPatientAPI, deletePatientAPI, 
   fetchStaffMembers, createStaffAPI, approveEmergencyAPI, assignDoctorAPI, 
   dispatchNearestAmbulanceAPI, allocateBedAPI, releaseBedAPI, fetchAppointmentsAPI, 
   approveAppointmentAPI, assignDoctorAppointmentAPI, completeAppointmentAPI,
@@ -26,6 +26,12 @@ export default function App() {
   const [staffRole, setStaffRole] = useState('Admin');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentTime, setCurrentTime] = useState('');
+
+  // Cold Start & Connection Status States
+  const [isWarmingUp, setIsWarmingUp] = useState(true);
+  const [socketConnected, setSocketConnected] = useState(socket.connected);
+  const [isFallbackMode, setIsFallbackMode] = useState(false);
+  const [actionErrorNotice, setActionErrorNotice] = useState(null);
 
   // Modals State
   const [showAddPatientModal, setShowAddPatientModal] = useState(false);
@@ -55,47 +61,51 @@ export default function App() {
     { group: 'O-', units: 8, status: 'Low Stock' }
   ]);
 
-  // Notifications State
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'Priority Queue Triage Active', time: 'Just now', message: 'Live Heap Reordering enabled for Critical > High > Medium cases', type: 'emergency' }
-  ]);
-
-  // Load Data & Socket Hooks
+  // Load Data & Socket Hooks with Render Cold-Start Warmup
   useEffect(() => {
-    const loadAllData = async () => {
+    const initializePortal = async () => {
+      // 1. Task 3: Render Free-Tier Cold-Start Warmup Ping (60s timeout)
+      await warmupBackendAPI();
+      setIsWarmingUp(false);
+
+      // 2. Load Normal Portal Data
       const [erData, patData, stfData, apptData] = await Promise.all([
-        fetchEmergencyQueue(), // Fetches live Priority Queue triage order
+        fetchEmergencyQueue(),
         fetchPatients(),
         fetchStaffMembers(),
         fetchAppointmentsAPI()
       ]);
-      if (erData) setEmergencyCases(erData);
+
+      if (erData) {
+        setEmergencyCases(erData);
+        if (erData.isFallbackData) setIsFallbackMode(true);
+      }
       if (patData) setPatients(patData);
       if (stfData) setStaffMembers(stfData);
       if (apptData) setAppointments(apptData);
     };
 
-    loadAllData();
+    initializePortal();
+
+    // Task 6: Socket Connection Listeners
+    const handleConnect = () => setSocketConnected(true);
+    const handleDisconnect = () => setSocketConnected(false);
+
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
 
     // Socket.IO Listener: PriorityQueue Reordered Stream
     socket.on('queue_updated', (reorderedQueue) => {
       if (Array.isArray(reorderedQueue) && reorderedQueue.length > 0) {
         setEmergencyCases(reorderedQueue);
         setLastDsaNotice('⚡ Socket Event: PriorityQueue (Binary Heap) reordered triage queue in real time!');
+        setIsFallbackMode(false);
       }
     });
 
     socket.on('new_emergency_request', (newCase) => {
-      setNotifications(prev => [
-        {
-          id: Date.now(),
-          title: '🚨 NEW EMERGENCY SUBMITTED',
-          time: 'Just now',
-          message: `${newCase.id} - ${newCase.patientName || newCase.patient} (${newCase.priority || 'Critical'})`,
-          type: 'emergency'
-        },
-        ...prev
-      ]);
+      setEmergencyCases(prev => [newCase, ...prev.filter(c => c.id !== newCase.id)]);
+      setIsFallbackMode(false);
     });
 
     socket.on('case_updated', (updatedCase) => {
@@ -107,6 +117,8 @@ export default function App() {
     });
 
     return () => {
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
       socket.off('queue_updated');
       socket.off('new_emergency_request');
       socket.off('case_updated');
@@ -123,14 +135,24 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Action Handlers consuming backend DSA endpoints
+  // Action Handlers with Strict Write Error Validation
   const handleApproveEmergency = async (id) => {
+    setActionErrorNotice(null);
+    const res = await approveEmergencyAPI(id);
+    if (res && res.success === false) {
+      setActionErrorNotice(res.message || 'Write operation failed. Check backend connection.');
+      return;
+    }
     setEmergencyCases(emergencyCases.map(c => c.id === id ? { ...c, status: 'Approved' } : c));
-    await approveEmergencyAPI(id);
   };
 
   const handleDispatchDijkstra = async (caseId, address) => {
+    setActionErrorNotice(null);
     const res = await dispatchNearestAmbulanceAPI(caseId, address);
+    if (res && res.success === false) {
+      setActionErrorNotice(res.message || 'Write operation failed. Check backend connection.');
+      return;
+    }
     if (res && res.success) {
       setLastDsaNotice(`🚚 Dijkstra Dispatch Success: ${res.data.ambulance.number} assigned (${res.data.distanceKm.toFixed(1)} km)`);
       const updatedCases = await fetchEmergencyQueue();
@@ -139,7 +161,12 @@ export default function App() {
   };
 
   const handleAllocateBedDSA = async (caseId, priority = 'Critical') => {
+    setActionErrorNotice(null);
     const res = await allocateBedAPI('ICU', priority, caseId);
+    if (res && res.success === false) {
+      setActionErrorNotice(res.message || 'Write operation failed. Check backend connection.');
+      return;
+    }
     if (res && res.success) {
       setLastDsaNotice(`🛏️ BedAllocator Success: Allocated ${res.data.bedNumber} (${res.data.allocatedCategory}${res.data.fallbackUsed ? ' via Fallback' : ''})`);
       const updatedCases = await fetchEmergencyQueue();
@@ -148,13 +175,36 @@ export default function App() {
   };
 
   const handleFetchCompatibleBlood = async (group) => {
+    setActionErrorNotice(null);
     const res = await fetchCompatibleBloodAPI(group);
+    if (res && res.success === false) {
+      setActionErrorNotice(res.message || 'Write operation failed. Check backend connection.');
+      return;
+    }
     if (res && res.success) {
       setLastDsaNotice(`🩸 Union-Find Blood Lookup: Compatible Donor Groups for ${group} = [${res.compatibleGroups.join(', ')}]`);
     }
   };
 
   const pendingCount = emergencyCases.filter(c => c.status === 'Pending').length;
+
+  // Render Warmup Loading Overlay
+  if (isWarmingUp) {
+    return (
+      <div className="w-full min-h-screen bg-[#071A1D] text-white flex flex-col items-center justify-center p-6 space-y-4 font-sans">
+        <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-[#0F766E] to-[#14B8A6] flex items-center justify-center text-3xl shadow-2xl animate-bounce">
+          🏥
+        </div>
+        <div className="flex items-center gap-2 text-teal-300 font-mono text-sm font-bold">
+          <Loader2 className="w-5 h-5 animate-spin text-[#14B8A6]" />
+          <span>Connecting to Sanjeevani Hospital Servers...</span>
+        </div>
+        <p className="text-xs text-slate-400 max-w-sm text-center font-medium leading-relaxed">
+          Waking up Render free-tier instance (cold-start initialization). Normal operations will resume automatically in a few seconds.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-h-screen bg-[#F8FAFC] text-slate-900 flex font-sans overflow-x-hidden">
@@ -231,15 +281,62 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs font-mono bg-cyan-50 text-cyan-800 border border-cyan-200 px-3 py-1.5 rounded-xl font-bold">
-            <Cpu className="w-4 h-4 text-cyan-600 animate-pulse" />
-            <span>{lastDsaNotice}</span>
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Task 6: Real-Time Connection Status Indicator Pill */}
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black border ${
+              socketConnected && !isFallbackMode 
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300' 
+                : isFallbackMode
+                ? 'bg-amber-50 text-amber-900 border-amber-300'
+                : 'bg-red-50 text-red-900 border-red-300'
+            }`}>
+              <span className={`w-2.5 h-2.5 rounded-full ${
+                socketConnected && !isFallbackMode 
+                  ? 'bg-emerald-500 animate-pulse' 
+                  : isFallbackMode 
+                  ? 'bg-amber-500' 
+                  : 'bg-red-500'
+              }`} />
+              <span>
+                {socketConnected && !isFallbackMode 
+                  ? 'Live Backend Connected' 
+                  : isFallbackMode 
+                  ? 'Demo / Fallback Mode' 
+                  : 'Backend Disconnected'}
+              </span>
+            </div>
+
+            <div className="hidden md:flex items-center gap-2 text-xs font-mono bg-cyan-50 text-cyan-800 border border-cyan-200 px-3 py-1.5 rounded-xl font-bold">
+              <Cpu className="w-4 h-4 text-cyan-600 animate-pulse" />
+              <span>{lastDsaNotice}</span>
+            </div>
           </div>
         </header>
 
         {/* DASHBOARD BODY */}
         <main className="p-4 sm:p-6 lg:p-8 space-y-8 flex-1">
           
+          {/* Write Operation Error Banner */}
+          {actionErrorNotice && (
+            <div className="p-4 rounded-2xl bg-red-50 border border-red-300 text-red-900 text-xs font-bold flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                <span>{actionErrorNotice}</span>
+              </div>
+              <button onClick={() => setActionErrorNotice(null)} className="p-1 text-red-600 hover:bg-red-100 rounded-lg">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Demo Fallback Data Notice */}
+          {isFallbackMode && (
+            <div className="p-3 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-bold flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>Showing demo data — live backend connection unavailable. Writes will require an active backend server connection.</span>
+            </div>
+          )}
+
           {/* EMERGENCY TRIAGE QUEUE CONSOLE (POWERED BY PRIORITY QUEUE BINARY MIN-HEAP) */}
           {(activeConsole === 'dashboard' || activeConsole === 'emergency') && (
             <div className="w-full bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">

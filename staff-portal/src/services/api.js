@@ -4,45 +4,75 @@ import {
   INITIAL_AMBULANCES, INITIAL_BEDS 
 } from '../data/hospitalStore';
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://hospital-emergency-management-system-1qmx.onrender.com/api';
+const RENDER_ROOT_URL = import.meta.env.VITE_SOCKET_URL || 'https://hospital-emergency-management-system-1qmx.onrender.com';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000
 });
 
+// Render Free-Tier Cold-Start Warmup API Ping (60s timeout)
+export const warmupBackendAPI = async () => {
+  try {
+    const res = await axios.get(RENDER_ROOT_URL, { timeout: 60000 });
+    return { success: true, data: res.data };
+  } catch (e) {
+    console.warn('Backend warmup ping failed or timed out:', e.message);
+    return { success: false, message: 'Cold start warmup failed' };
+  }
+};
+
 export const fetchStaffEmergencies = async () => {
   try {
     const res = await api.get('/emergency');
-    if (res.data && res.data.data && res.data.data.length > 0) return res.data.data;
+    if (res.data && res.data.data && res.data.data.length > 0) {
+      const data = res.data.data;
+      data.isFallbackData = false;
+      return data;
+    }
   } catch (e) {
     console.warn('Backend API unavailable, returning seed emergency cases');
   }
-  return INITIAL_EMERGENCY_CASES;
+  const fallback = [...INITIAL_EMERGENCY_CASES];
+  fallback.isFallbackData = true;
+  return fallback;
 };
 
 // PriorityQueue Live Triage Console Endpoint
 export const fetchEmergencyQueue = async () => {
   try {
     const res = await api.get('/emergency/queue');
-    if (res.data && res.data.data) return res.data.data;
+    if (res.data && res.data.data) {
+      const data = res.data.data;
+      data.isFallbackData = false;
+      return data;
+    }
   } catch (e) {
     console.warn('Backend Queue API unavailable, returning seed emergency cases');
   }
-  return INITIAL_EMERGENCY_CASES;
+  const fallback = [...INITIAL_EMERGENCY_CASES];
+  fallback.isFallbackData = true;
+  return fallback;
 };
 
 export const fetchAppointmentsAPI = async () => {
   try {
     const res = await api.get('/appointment');
-    if (res.data && res.data.data && res.data.data.length > 0) return res.data.data;
+    if (res.data && res.data.data && res.data.data.length > 0) {
+      const data = res.data.data;
+      data.isFallbackData = false;
+      return data;
+    }
   } catch (e) {
     console.warn('Backend API unavailable, returning seed appointments');
   }
-  return [
+  const fallback = [
     { id: 'APT202600001', patientName: 'Rahul Sharma', doctorName: 'Dr. Rajesh Sharma', department: 'Cardiology', date: '2026-08-08', timeSlot: '10:00 AM - 10:30 AM', status: 'Appointment Requested' },
     { id: 'APT202600002', patientName: 'Pooja Verma', doctorName: 'Dr. Priya Mehta', department: 'Neurology', date: '2026-08-08', timeSlot: '02:00 PM - 02:30 PM', status: 'Approved' }
   ];
+  fallback.isFallbackData = true;
+  return fallback;
 };
 
 export const approveAppointmentAPI = async (id) => {
@@ -50,7 +80,8 @@ export const approveAppointmentAPI = async (id) => {
     const res = await api.put('/appointment/approve', { id });
     return res.data;
   } catch (e) {
-    console.warn('Backend approve appointment failed');
+    console.error('Backend request failed:', e);
+    return { success: false, message: 'Unable to reach the hospital server. Please check your connection and try again.' };
   }
 };
 
@@ -59,7 +90,8 @@ export const assignDoctorAppointmentAPI = async (id, doctorName) => {
     const res = await api.put('/appointment/assignDoctor', { id, doctorName });
     return res.data;
   } catch (e) {
-    console.warn('Backend assign doctor appointment failed');
+    console.error('Backend request failed:', e);
+    return { success: false, message: 'Unable to reach the hospital server. Please check your connection and try again.' };
   }
 };
 
@@ -68,21 +100,28 @@ export const completeAppointmentAPI = async (id) => {
     const res = await api.put('/appointment/complete', { id });
     return res.data;
   } catch (e) {
-    console.warn('Backend complete appointment failed');
+    console.error('Backend request failed:', e);
+    return { success: false, message: 'Unable to reach the hospital server. Please check your connection and try again.' };
   }
 };
 
 export const fetchPatients = async () => {
   try {
     const res = await api.get('/patients');
-    if (res.data && res.data.data && res.data.data.length > 0) return res.data.data;
+    if (res.data && res.data.data && res.data.data.length > 0) {
+      const data = res.data.data;
+      data.isFallbackData = false;
+      return data;
+    }
   } catch (e) {
     console.warn('Backend API unavailable, returning seed patients');
   }
-  return [
+  const fallback = [
     { id: 'PAT202600001', name: 'Rahul Sharma', age: 42, gender: 'Male', phone: '+91 98765 43210', address: 'Sector 32, Chandigarh', bloodGroup: 'O+', status: 'Admitted', ward: 'ICU Tower', bedNumber: 'Bed-ICU-01', attendingDoctor: 'Dr. Rajesh Sharma', medicalHistory: 'Hypertension, Cardiac Observation' },
     { id: 'PAT202600002', name: 'Pooja Verma', age: 34, gender: 'Female', phone: '+91 98765 54321', address: 'Sector 17, Chandigarh', bloodGroup: 'A+', status: 'Admitted', ward: 'General Ward', bedNumber: 'Bed-GEN-04', attendingDoctor: 'Dr. Priya Mehta', medicalHistory: 'Post-op observation' }
   ];
+  fallback.isFallbackData = true;
+  return fallback;
 };
 
 export const createPatientAPI = async (patientData) => {
@@ -90,7 +129,8 @@ export const createPatientAPI = async (patientData) => {
     const res = await api.post('/patients', patientData);
     return res.data;
   } catch (e) {
-    return { success: true, data: { id: `PAT2026${Math.floor(10000 + Math.random() * 90000)}`, ...patientData } };
+    console.error('Backend request failed:', e);
+    return { success: false, message: 'Unable to reach the hospital server. Please check your connection and try again.' };
   }
 };
 
@@ -99,21 +139,28 @@ export const deletePatientAPI = async (id) => {
     const res = await api.delete(`/patients/${id}`);
     return res.data;
   } catch (e) {
-    return { success: true };
+    console.error('Backend request failed:', e);
+    return { success: false, message: 'Unable to reach the hospital server. Please check your connection and try again.' };
   }
 };
 
 export const fetchStaffMembers = async () => {
   try {
     const res = await api.get('/staff');
-    if (res.data && res.data.data && res.data.data.length > 0) return res.data.data;
+    if (res.data && res.data.data && res.data.data.length > 0) {
+      const data = res.data.data;
+      data.isFallbackData = false;
+      return data;
+    }
   } catch (e) {
     console.warn('Backend API unavailable, returning seed staff');
   }
-  return [
+  const fallback = [
     { id: 'STF-101', name: 'Dr. Rajesh Sharma', role: 'Doctor', department: 'Cardiology', phone: '+91 172 456 7801', email: 'dr.sharma@sanjeevanihospital.in', status: 'Active' },
     { id: 'STF-102', name: 'Vikramjit Singh', role: 'Admin', department: 'Executive Management', phone: '+91 172 456 7800', email: 'admin@sanjeevanihospital.in', status: 'Active' }
   ];
+  fallback.isFallbackData = true;
+  return fallback;
 };
 
 export const createStaffAPI = async (staffData) => {
@@ -121,7 +168,8 @@ export const createStaffAPI = async (staffData) => {
     const res = await api.post('/staff', staffData);
     return res.data;
   } catch (e) {
-    return { success: true, data: { id: `STF-${Math.floor(100 + Math.random() * 900)}`, ...staffData } };
+    console.error('Backend request failed:', e);
+    return { success: false, message: 'Unable to reach the hospital server. Please check your connection and try again.' };
   }
 };
 
@@ -130,7 +178,8 @@ export const approveEmergencyAPI = async (id) => {
     const res = await api.put('/emergency/approve', { id });
     return res.data;
   } catch (e) {
-    console.warn('Backend approve failed');
+    console.error('Backend request failed:', e);
+    return { success: false, message: 'Unable to reach the hospital server. Please check your connection and try again.' };
   }
 };
 
@@ -139,7 +188,8 @@ export const assignDoctorAPI = async (id, doctorName) => {
     const res = await api.put('/emergency/assignDoctor', { id, doctorName });
     return res.data;
   } catch (e) {
-    console.warn('Backend assignDoctor failed');
+    console.error('Backend request failed:', e);
+    return { success: false, message: 'Unable to reach the hospital server. Please check your connection and try again.' };
   }
 };
 
@@ -149,7 +199,8 @@ export const dispatchNearestAmbulanceAPI = async (caseId, address) => {
     const res = await api.post('/ambulances/dispatch', { caseId, address });
     return res.data;
   } catch (e) {
-    console.warn('Backend dispatchNearestAmbulance failed');
+    console.error('Backend request failed:', e);
+    return { success: false, message: 'Unable to reach the hospital server. Please check your connection and try again.' };
   }
 };
 
@@ -159,7 +210,8 @@ export const allocateBedAPI = async (category = 'General', priority = 'Medium', 
     const res = await api.post('/beds/allocate', { category, priority, caseId });
     return res.data;
   } catch (e) {
-    console.warn('Backend BedAllocator allocate failed');
+    console.error('Backend request failed:', e);
+    return { success: false, message: 'Unable to reach the hospital server. Please check your connection and try again.' };
   }
 };
 
@@ -168,7 +220,8 @@ export const releaseBedAPI = async (bedId) => {
     const res = await api.post('/beds/release', { bedId });
     return res.data;
   } catch (e) {
-    console.warn('Backend releaseBed failed');
+    console.error('Backend request failed:', e);
+    return { success: false, message: 'Unable to reach the hospital server. Please check your connection and try again.' };
   }
 };
 
@@ -178,7 +231,8 @@ export const fetchPatientReportsAPI = async (patientId) => {
     const res = await api.get(`/patient/reports/${patientId}`);
     return res.data;
   } catch (e) {
-    console.warn('Backend fetchPatientReports failed');
+    console.error('Backend request failed:', e);
+    return { success: false, message: 'Unable to reach the hospital server. Please check your connection and try again.' };
   }
 };
 
@@ -188,7 +242,8 @@ export const fetchCompatibleBloodAPI = async (group) => {
     const res = await api.get(`/blood/compatible/${group}`);
     return res.data;
   } catch (e) {
-    console.warn('Backend fetchCompatibleBlood failed');
+    console.error('Backend request failed:', e);
+    return { success: false, message: 'Unable to reach the hospital server. Please check your connection and try again.' };
   }
 };
 

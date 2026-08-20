@@ -4,7 +4,7 @@ import {
   Upload, QrCode, Bell, Download, CheckCircle2, Lock, ShieldCheck, 
   MapPin, Phone, Mail, Globe, ArrowRight, Activity, Users, Bed, Truck, 
   AlertCircle, Check, Award, ChevronRight, Calendar, UserCheck, Plus, X,
-  Cpu, Sparkles
+  Cpu, Sparkles, AlertTriangle, Loader2
 } from 'lucide-react';
 import { 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, 
@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 import { HOSPITAL_INFO, INITIAL_DOCTORS, INITIAL_EMERGENCY_CASES } from './data/hospitalStore';
 import { 
-  fetchDoctors, fetchAmbulances, fetchBeds, fetchBloodStock, 
+  warmupBackendAPI, fetchDoctors, fetchAmbulances, fetchBeds, fetchBloodStock, 
   fetchEmergencies, postEmergency, registerNormalPatientAPI, 
   bookAppointmentAPI, fetchAppointmentsAPI, fetchPatientReportsAPI,
   fetchCompatibleBloodAPI, requestBloodAPI
@@ -27,6 +27,12 @@ export default function App() {
   const [bloodStock, setBloodStock] = useState([]);
   const [emergencyRequests, setEmergencyRequests] = useState(INITIAL_EMERGENCY_CASES);
   const [myAppointments, setMyAppointments] = useState([]);
+
+  // Cold Start & Connection Status States
+  const [isWarmingUp, setIsWarmingUp] = useState(true);
+  const [socketConnected, setSocketConnected] = useState(socket.connected);
+  const [isFallbackMode, setIsFallbackMode] = useState(false);
+  const [actionErrorNotice, setActionErrorNotice] = useState(null);
 
   // Reports & Blood DSA State
   const [patientIdInput, setPatientIdInput] = useState('SAN-2026-1001');
@@ -69,9 +75,14 @@ export default function App() {
     insuranceProvider: 'Star Health Insurance'
   });
 
-  // Load Initial Data & Register Socket Hooks
+  // Load Initial Data & Register Socket Hooks with Render Cold-Start Warmup
   useEffect(() => {
-    const loadInitialData = async () => {
+    const initializePortal = async () => {
+      // 1. Task 3: Render Free-Tier Cold-Start Warmup Ping (60s timeout)
+      await warmupBackendAPI();
+      setIsWarmingUp(false);
+
+      // 2. Load Normal Portal Data
       const [docsData, ambData, bedData, bloodData, erData, apptData] = await Promise.all([
         fetchDoctors(),
         fetchAmbulances(),
@@ -80,26 +91,31 @@ export default function App() {
         fetchEmergencies(),
         fetchAppointmentsAPI()
       ]);
-      setDoctors(docsData);
-      setAmbulances(ambData);
-      setBeds(bedData);
-      setBloodStock(bloodData);
-      setEmergencyRequests(erData);
 
-      const isCleared = localStorage.getItem('patient_appointments_cleared') === 'true';
-      const isEmergencySubmitted = localStorage.getItem('patient_emergency_submitted') === 'true';
-      if (isCleared || isEmergencySubmitted) {
-        setMyAppointments([]);
-      } else {
-        setMyAppointments(apptData);
+      if (docsData) setDoctors(docsData);
+      if (ambData) setAmbulances(ambData);
+      if (bedData) setBeds(bedData);
+      if (bloodData) setBloodStock(bloodData);
+      if (erData) {
+        setEmergencyRequests(erData);
+        if (erData.isFallbackData) setIsFallbackMode(true);
       }
+      if (apptData) setMyAppointments(apptData);
     };
 
-    loadInitialData();
+    initializePortal();
+
+    // Task 6: Socket Connection Listeners
+    const handleConnect = () => setSocketConnected(true);
+    const handleDisconnect = () => setSocketConnected(false);
+
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
 
     // Socket.IO Events
     socket.on('new_emergency_request', (newCase) => {
       setEmergencyRequests(prev => [newCase, ...prev]);
+      setIsFallbackMode(false);
     });
 
     socket.on('case_updated', (updatedCase) => {
@@ -111,6 +127,8 @@ export default function App() {
     });
 
     return () => {
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
       socket.off('new_emergency_request');
       socket.off('case_updated');
       socket.off('appointment_approved');
@@ -118,7 +136,12 @@ export default function App() {
   }, []);
 
   const handleFetchReportsDSA = async () => {
+    setActionErrorNotice(null);
     const res = await fetchPatientReportsAPI(patientIdInput);
+    if (res && res.success === false) {
+      setActionErrorNotice(res.message || 'Unable to reach the hospital server. Please check your connection.');
+      return;
+    }
     if (res && res.data) {
       setPatientReports(res.data);
       setReportFetchNotice({ source: res.source, count: res.data.length });
@@ -126,8 +149,13 @@ export default function App() {
   };
 
   const handleFetchCompatibleBloodDSA = async (group) => {
+    setActionErrorNotice(null);
     setSelectedBloodGroup(group);
     const res = await fetchCompatibleBloodAPI(group);
+    if (res && res.success === false) {
+      setActionErrorNotice(res.message || 'Unable to reach the hospital server. Please check your connection.');
+      return;
+    }
     if (res && res.compatibleGroups) {
       setCompatibleGroups(res.compatibleGroups);
     }
@@ -135,13 +163,15 @@ export default function App() {
 
   const handleEmergencySubmit = async (e) => {
     e.preventDefault();
+    setActionErrorNotice(null);
     const result = await postEmergency(emergencyForm);
-    const newCase = (result && result.data) || {
-      id: `ER2026${Math.floor(1000 + Math.random() * 9000)}`,
-      ...emergencyForm,
-      status: 'Submitted'
-    };
-    newCase.status = 'Submitted';
+
+    if (!result || result.success === false) {
+      setActionErrorNotice((result && result.message) || 'Unable to reach the hospital server. Emergency request failed.');
+      return;
+    }
+
+    const newCase = result.data;
     setEmergencyRequests([newCase, ...emergencyRequests]);
 
     const removedCount = myAppointments.length;
@@ -161,7 +191,14 @@ export default function App() {
 
   const handleNormalSubmit = async (e) => {
     e.preventDefault();
+    setActionErrorNotice(null);
     const patRes = await registerNormalPatientAPI(normalForm);
+
+    if (!patRes || patRes.success === false) {
+      setActionErrorNotice((patRes && patRes.message) || 'Unable to reach the hospital server. Registration failed.');
+      return;
+    }
+
     const apptRes = await bookAppointmentAPI({
       patientName: normalForm.name,
       doctorName: normalForm.doctorPreference,
@@ -170,16 +207,13 @@ export default function App() {
       timeSlot: normalForm.timeSlot
     });
 
+    if (!apptRes || apptRes.success === false) {
+      setActionErrorNotice((apptRes && apptRes.message) || 'Unable to reach the hospital server. Appointment booking failed.');
+      return;
+    }
+
     const patientId = patRes.patientId || (patRes.data && patRes.data.id) || `PAT2026${Math.floor(10000 + Math.random() * 90000)}`;
-    const newAppt = (apptRes && apptRes.data) || {
-      id: `APT2026${Math.floor(10000 + Math.random() * 90000)}`,
-      patientName: normalForm.name,
-      doctorName: normalForm.doctorPreference,
-      department: normalForm.department,
-      date: normalForm.appointmentDate,
-      timeSlot: normalForm.timeSlot,
-      status: 'Appointment Requested'
-    };
+    const newAppt = apptRes.data;
 
     localStorage.removeItem('patient_appointments_cleared');
     localStorage.removeItem('patient_emergency_submitted');
@@ -191,6 +225,24 @@ export default function App() {
     });
     setActiveTab('appointments');
   };
+
+  // Render Warmup Loading Overlay
+  if (isWarmingUp) {
+    return (
+      <div className="w-full min-h-screen bg-[#071A1D] text-white flex flex-col items-center justify-center p-6 space-y-4 font-sans">
+        <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-[#0F766E] to-[#14B8A6] flex items-center justify-center text-3xl shadow-2xl animate-bounce">
+          🏥
+        </div>
+        <div className="flex items-center gap-2 text-teal-300 font-mono text-sm font-bold">
+          <Loader2 className="w-5 h-5 animate-spin text-[#14B8A6]" />
+          <span>Connecting to Sanjeevani Hospital Servers...</span>
+        </div>
+        <p className="text-xs text-slate-400 max-w-sm text-center font-medium leading-relaxed">
+          Waking up Render free-tier instance (cold-start initialization). Normal operations will resume automatically in a few seconds.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col font-sans relative overflow-x-hidden">
@@ -210,7 +262,31 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3 text-slate-300">
-            <span className="bg-teal-950 px-2.5 py-1 rounded-full text-[10px] font-extrabold text-teal-300 border border-teal-700/50">
+            {/* Task 6: Real-Time Connection Status Indicator Pill */}
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black border ${
+              socketConnected && !isFallbackMode 
+                ? 'bg-emerald-950 text-emerald-300 border-emerald-700/50' 
+                : isFallbackMode
+                ? 'bg-amber-950 text-amber-300 border-amber-700/50'
+                : 'bg-red-950 text-red-300 border-red-700/50'
+            }`}>
+              <span className={`w-2.5 h-2.5 rounded-full ${
+                socketConnected && !isFallbackMode 
+                  ? 'bg-emerald-400 animate-pulse' 
+                  : isFallbackMode 
+                  ? 'bg-amber-400' 
+                  : 'bg-red-400'
+              }`} />
+              <span>
+                {socketConnected && !isFallbackMode 
+                  ? 'Live Backend Connected' 
+                  : isFallbackMode 
+                  ? 'Demo / Fallback Mode' 
+                  : 'Backend Disconnected'}
+              </span>
+            </div>
+
+            <span className="hidden sm:inline-block bg-teal-950 px-2.5 py-1 rounded-full text-[10px] font-extrabold text-teal-300 border border-teal-700/50">
               NABH & NABL Accredited 24×7
             </span>
           </div>
@@ -275,8 +351,29 @@ export default function App() {
       </nav>
 
       {/* MAIN BODY CONTENT */}
-      <main className="flex-1 w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+      <main className="flex-1 w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
+        {/* Write Operation Error Banner */}
+        {actionErrorNotice && (
+          <div className="p-4 rounded-2xl bg-red-50 border border-red-300 text-red-900 text-xs font-bold flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+              <span>{actionErrorNotice}</span>
+            </div>
+            <button onClick={() => setActionErrorNotice(null)} className="p-1 text-red-600 hover:bg-red-100 rounded-lg">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Demo Fallback Data Notice */}
+        {isFallbackMode && (
+          <div className="p-3 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-bold flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>Showing demo data — live backend connection unavailable. Please ensure backend server is active.</span>
+          </div>
+        )}
+
         {/* HOME PAGE VIEW */}
         {activeTab === 'home' && (
           <div className="w-full space-y-12">

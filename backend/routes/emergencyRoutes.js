@@ -12,7 +12,7 @@ module.exports = (io) => {
   router.put('/reject', ctrl.rejectEmergency);
   router.put('/assignDoctor', ctrl.assignDoctor);
   router.put('/dispatchAmbulance', ctrl.dispatchAmbulance);
-  router.put('/allocateBed', ctrl.allocateBed);
+  // Note: Bed allocation is powered exclusively by BedAllocator via POST /api/beds/allocate
   router.put('/requestBlood', ctrl.requestBlood);
   router.put('/complete', ctrl.completeEmergency);
 
