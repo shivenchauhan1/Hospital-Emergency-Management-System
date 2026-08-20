@@ -30,6 +30,8 @@ assert.strictEqual(triageArray[0].id, 'C4', 'Earlier Critical must rank 1st');
 assert.strictEqual(triageArray[1].id, 'C2', 'Later Critical must rank 2nd');
 assert.strictEqual(triageArray[2].id, 'C3', 'High priority must rank 3rd');
 assert.strictEqual(triageArray[3].id, 'C1', 'Medium priority must rank 4th');
+assert.strictEqual(PriorityQueue.getPriorityRank(null), 3, 'Null priority string must return 3');
+assert.strictEqual(PriorityQueue.getPriorityRank(undefined), 3, 'Undefined priority string must return 3');
 assert.strictEqual(pq.size(), 4, 'toArray() must preserve original heap size');
 console.log('   ✅ PriorityQueue tests passed!');
 

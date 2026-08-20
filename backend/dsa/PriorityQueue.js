@@ -20,7 +20,7 @@ class PriorityQueue {
    * Rank 3: Medium (Lowest priority)
    */
   static getPriorityRank(priorityStr) {
-    if (!priorityStr) fontRank = 3;
+    if (!priorityStr) return 3;
     const p = String(priorityStr).trim().toLowerCase();
     if (p === 'critical') return 1;
     if (p === 'high') return 2;

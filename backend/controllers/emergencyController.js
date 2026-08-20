@@ -231,15 +231,27 @@ module.exports = (io) => {
       }
     },
 
-    // PUT /api/emergency/allocateBed
+    // PUT /api/emergency/allocateBed - Delegates to BedAllocator Free-List Stack
     allocateBed: async (req, res) => {
       try {
-        const { id, bedNumber } = req.body;
+        const { id, category = 'ICU', priority = 'Critical' } = req.body;
+        let { bedNumber } = req.body;
+
+        // If no bedNumber supplied, allocate via BedAllocator Free-List Stack
+        if (!bedNumber) {
+          const { bedAllocatorInstance } = require('./bedController');
+          const result = bedAllocatorInstance.allocate(category, priority);
+          if (result && result.bed) {
+            bedNumber = result.bed.bedNumber;
+          } else {
+            bedNumber = 'Bed-ICU-01'; // Fallback
+          }
+        }
 
         // 1. DB-FIRST WRITE
         const updatedCase = await EmergencyCase.findOneAndUpdate(
           { id },
-          { bedAllocated: bedNumber || 'Bed-ICU-01', status: 'Treatment Started' },
+          { bedAllocated: bedNumber, status: 'Treatment Started' },
           { new: true }
         );
 
@@ -256,7 +268,7 @@ module.exports = (io) => {
           io.emit('case_updated', updatedCase);
         }
 
-        res.json({ success: true, message: 'Bed Allocated', data: updatedCase });
+        res.json({ success: true, message: `Bed Allocated (${bedNumber}) via BedAllocator`, data: updatedCase });
       } catch (err) {
         res.status(500).json({ success: false, message: err.message });
       }
