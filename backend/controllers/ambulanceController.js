@@ -14,6 +14,30 @@ exports.getAmbulances = async (req, res) => {
 };
 
 /**
+ * POST /api/ambulances/reset
+ * Resets all dispatched/on-route ambulances back to Available status
+ * Used to restore dispatch capability after all units become occupied
+ */
+exports.resetAmbulances = async (req, res) => {
+  try {
+    const result = await Ambulance.updateMany(
+      { status: { $in: ['Dispatched', 'On Route'] } },
+      { $set: { status: 'Available', eta: '5 Mins' } }
+    );
+    const ambulances = await Ambulance.find();
+    res.json({
+      success: true,
+      message: `Reset ${result.modifiedCount} ambulance(s) to Available status`,
+      data: ambulances
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
+
+/**
  * POST /api/ambulances/dispatch
  * Automates 108 Ambulance Dispatch using Graph + Dijkstra Shortest Path
  */

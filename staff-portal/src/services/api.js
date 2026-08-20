@@ -23,6 +23,42 @@ export const warmupBackendAPI = async () => {
   }
 };
 
+export const fetchDoctors = async () => {
+  try {
+    const res = await api.get('/doctors');
+    if (res.data && res.data.data && res.data.data.length > 0) {
+      return res.data.data;
+    }
+  } catch (e) {
+    console.warn('Backend API unavailable, using seed Doctors');
+  }
+  return [...INITIAL_DOCTORS];
+};
+
+export const fetchAmbulances = async () => {
+  try {
+    const res = await api.get('/ambulances');
+    if (res.data && res.data.data) {
+      return res.data.data;
+    }
+  } catch (e) {
+    console.warn('Backend API unavailable, returning seed Ambulances');
+  }
+  return [...INITIAL_AMBULANCES];
+};
+
+export const fetchBeds = async () => {
+  try {
+    const res = await api.get('/beds');
+    if (res.data && res.data.data && res.data.data.length > 0) {
+      return res.data.data;
+    }
+  } catch (e) {
+    console.warn('Backend API unavailable, returning seed Beds');
+  }
+  return [...INITIAL_BEDS];
+};
+
 export const fetchStaffEmergencies = async () => {
   try {
     const res = await api.get('/emergency');
@@ -247,4 +283,38 @@ export const fetchCompatibleBloodAPI = async (group) => {
   }
 };
 
+// Fetch full blood inventory
+export const fetchBloodStock = async () => {
+  try {
+    const res = await api.get('/blood');
+    if (res.data && res.data.data && res.data.data.length > 0) {
+      return res.data.data;
+    }
+  } catch (e) {
+    console.warn('Backend API unavailable, returning default blood stock');
+  }
+  return [
+    { group: 'A+', units: 65, status: 'Adequate' },
+    { group: 'A-', units: 14, status: 'Low Stock' },
+    { group: 'B+', units: 82, status: 'Adequate' },
+    { group: 'B-', units: 9, status: 'Critical Shortage' },
+    { group: 'AB+', units: 48, status: 'Adequate' },
+    { group: 'AB-', units: 6, status: 'Critical Shortage' },
+    { group: 'O+', units: 88, status: 'Adequate' },
+    { group: 'O-', units: 8, status: 'Low Stock' }
+  ];
+};
+
+// Reset all dispatched ambulances back to Available
+export const resetAmbulancesAPI = async () => {
+  try {
+    const res = await api.post('/ambulances/reset');
+    return res.data;
+  } catch (e) {
+    console.error('Backend request failed:', e);
+    return { success: false, message: 'Unable to reach the hospital server. Please check your connection and try again.' };
+  }
+};
+
 export default api;
+
